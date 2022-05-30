@@ -1,13 +1,51 @@
-<!-- modify this form HTML and place wherever you want your form -->
+<!DOCTYPE html>
+<html>
+<style>
+  input[type=text], select {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+input[type=submit] {
+  width: 10%;
+  background-color: #4CAF50;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+input[type=submit]:hover {
+  background-color: #45a049;
+}
+
+div {
+  border-radius: 5px;
+  background-color: #f2f2f2;
+  padding: 20px;
+}
+</style>
+<body>
+<img src='kartoffel_wall.jpeg'> Please help bring Magic Kartoffel back home!
+<div>
 <form id="my-form" action="https://formspree.io/f/mwkyywly" method="POST">
-  <label>Email:</label>
-  <input type="email" name="email" />
-  <label>Message:</label>
+  <label>How can we contact you?</label>
+  <input type="text" name="email" /><br>
+  <label>What information do you have about Magic Kartoffel? No tidbit is too tiny.</label>
   <input type="text" name="message" />
-  <button id="my-form-button">Submit</button>
   <p id="my-form-status"></p>
-</form>
-<!-- Place this script at the end of the body tag -->
+  <input type="submit" value="Submit">
+  </form>
+</div>
+
+<img src='missing_poster.jpg'> Please help bring Magic Kartoffel back home!
 <script>
     var form = document.getElementById("my-form");
     
@@ -40,3 +78,5 @@
     }
     form.addEventListener("submit", handleSubmit)
 </script>
+</body>
+</html>
