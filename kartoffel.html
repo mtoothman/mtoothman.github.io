@@ -35,11 +35,11 @@ div {
 <body>
 
 <div>
-<form id="my-form" action="https://formspree.io/f/mwkyywly" method="POST">
+  <form id="my-form" action="https://formspree.io/f/mwkyywly" method="POST">
+  <label>What information do you have about our friend? No tidbit is too tiny.</label>
+  <input type="text" name="message" />
   <label>How can we contact you?</label>
   <input type="text" name="email" /><br>
-  <label>What information do you have about Magic Kartoffel? No tidbit is too tiny.</label>
-  <input type="text" name="message" />
   <p id="my-form-status"></p>
   <input type="submit" value="Submit">
   </form>
@@ -60,19 +60,19 @@ div {
         }
       }).then(response => {
         if (response.ok) {
-          status.innerHTML = "Thanks for your help bringing Magic Kartoffel home!";
+          status.innerHTML = "Thanks for your help bringing our friend home!";
           form.reset()
         } else {
           response.json().then(data => {
             if (Object.hasOwn(data, 'errors')) {
               status.innerHTML = data["errors"].map(error => error["message"]).join(", ")
             } else {
-              status.innerHTML = "Oops! There was a problem submitting your form"
+              status.innerHTML = "Oops! There was a problem submitting your form. Please try again!"
             }
           })
         }
       }).catch(error => {
-        status.innerHTML = "Oops! There was a problem submitting your form"
+        status.innerHTML = "Oops! There was a problem submitting your form. Please try again!"
       });
     }
     form.addEventListener("submit", handleSubmit)
