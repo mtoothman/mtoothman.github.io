@@ -23,7 +23,7 @@ export const keys = {
   s: 's',
   d: 'd',
   r: 'r',
-  z: 'z'
+  x: 'x'
 }
 
 export const size = {

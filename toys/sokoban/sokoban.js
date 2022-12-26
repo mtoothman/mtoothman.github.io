@@ -20,6 +20,7 @@ import {
   getY,
   countBlocks,
   generateGameBoard,
+  generateRandomBoard
 } from './utils.js'
 
 class Sokoban {
@@ -39,11 +40,13 @@ class Sokoban {
     if (cell === 'void' || cell === 'player') {
       const circleSize = cell === 'player' ? 20 : 10
 
+      // render background
       this.context.beginPath()
       this.context.rect(x * multiplier, y * multiplier, multiplier, multiplier)
       this.context.fillStyle = colors.empty.fill
       this.context.fill()
 
+      // render circular goal nodes
       this.context.beginPath()
       this.context.arc(x * multiplier + 75 / 2, y * multiplier + 75 / 2, circleSize, 0, 2 * Math.PI)
       this.context.lineWidth = 10
@@ -52,6 +55,7 @@ class Sokoban {
       this.context.fill()
       this.context.stroke()
     } else {
+      // render boxes and walls
       this.context.beginPath()
       this.context.rect(x * multiplier + 5, y * multiplier + 5, multiplier - 10, multiplier - 10)
       this.context.fillStyle = colors[cell].fill
@@ -67,14 +71,21 @@ class Sokoban {
 
   render(options = {}) {
     if (options.restart) {
+      console.log("Using level 1 map")
       this.board = generateGameBoard({ level: 1 })
+    } else if (options.random) {
+      console.log("Using random map")      
+      this.board = generateGameBoard({ level: "random" })
     }
+    console.log("options:");
+    console.log(options);
+    console.log("board:");
+    console.log(this.board);
     this.board.forEach((row, y) => {
       row.forEach((cell, x) => {
         this.paintCell(this.context, cell, x, y)
       })
     })
-
     const rowsWithVoid = this.board.filter((row) => row.some((entry) => entry === VOID))
     // The player herself might be standing on an initially void cell:
     if (isVoid(levelOneMap[this.findPlayerCoords().y][this.findPlayerCoords().x])) {

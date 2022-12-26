@@ -27,11 +27,12 @@ document.addEventListener('keydown', (event) => {
       sokoban.move(playerCoords, directions.right)
       break
     case keys.r:
+      console.log("r key pressed!")
       sokoban.render({ restart: true })
       break
-    
-    case keys.z:
-      sokoban.render({ restart: true })
+    case keys.x:
+      console.log("x key pressed!")
+      sokoban.render({ random: true })
       break
     
     default:

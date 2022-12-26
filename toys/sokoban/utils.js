@@ -34,6 +34,8 @@ export const getY = (y, direction, spaces = 1) => {
 export function generateGameBoard({ level }) {
   if (level === 1) {
     return JSON.parse(JSON.stringify(levelOneMap)) // clone deep hack
+  } else if (level === "random") {
+    return JSON.parse(JSON.stringify(generateRandomBoard()))
   }
 }
 
@@ -45,3 +47,19 @@ export function countBlocks(blockCount, y, x, direction, board) {
     return blockCount
   }
 }
+
+export function generateRandomBoard() {
+  const randomMap = [
+    [WALL, WALL, WALL, WALL, WALL, WALL, WALL, EMPTY],
+    [WALL, WALL, WALL, EMPTY, EMPTY, EMPTY, WALL, EMPTY],
+    [WALL, VOID, PLAYER, BLOCK, EMPTY, EMPTY, WALL, EMPTY],
+    [WALL, WALL, WALL, EMPTY, BLOCK, VOID, WALL, EMPTY],
+    [WALL, VOID, WALL, WALL, BLOCK, EMPTY, WALL, EMPTY],
+    [WALL, EMPTY, WALL, EMPTY, VOID, EMPTY, WALL, WALL],
+    [WALL, BLOCK, EMPTY, SUCCESS_BLOCK, BLOCK, BLOCK, VOID, WALL],
+    [WALL, EMPTY, EMPTY, EMPTY, VOID, EMPTY, EMPTY, WALL],
+    [WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL],
+]
+  return randomMap
+}
+
