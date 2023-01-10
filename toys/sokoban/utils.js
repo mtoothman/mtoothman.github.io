@@ -49,7 +49,16 @@ export function countBlocks(blockCount, y, x, direction, board) {
 }
 
 export function generateRandomBoard() {
-  const randomMap = [
+  const horizSize = 8;
+  const vertSize = 8;
+  const elements = ['WALL', 'EMPTY', 'VOID', 'BLOCK', 'PLAYER']
+  let randomMap = [];
+  for (let i=0; i>horizSize; i++) {
+    for (let j=0; j>vertSize; j++) {
+      randomMap.push(elements[Math.floor(Math.random() * elements.length)]);
+    }}
+
+  /* const randomMap = [
     [WALL, WALL, WALL, WALL, WALL, WALL, WALL, EMPTY],
     [WALL, WALL, WALL, EMPTY, EMPTY, EMPTY, WALL, EMPTY],
     [WALL, VOID, PLAYER, BLOCK, EMPTY, EMPTY, WALL, EMPTY],
@@ -59,7 +68,7 @@ export function generateRandomBoard() {
     [WALL, BLOCK, EMPTY, SUCCESS_BLOCK, BLOCK, BLOCK, VOID, WALL],
     [WALL, EMPTY, EMPTY, EMPTY, VOID, EMPTY, EMPTY, WALL],
     [WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL],
-]
+] */
   return randomMap
 }
 
