@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Shakespeare insult generator!</title>
+    <style>
+      * { padding: 0; margin: 0; }
+      canvas { background: #eee; display: block; margin: 0 auto; }
+    </style>
+</head>
+<body>
+<button type="button" onclick="compliments()">Compliments!</button>
+<button type="button" onclick="insults()">Insults!</button>
+<br>
+<h3><div id="compDiv"></div></h3>
+<br>
+<h3><div id="insultDiv"></div></h3>
+
+
+<script>
+  function compliments() {
+      var comp_1 = [
+          "rare",
+          "sweet",
+          "fruitful",
+          "brave",
+          "sugared",
+          "flowering",
+          "precious",
+          "gallant",
+          "delicate",
+          "celestial"    
+      ]
+
+      var comp_2 = [
+          "honey-tongued",
+          "well-wishing",
+          "fair-faced",
+          "best-tempered",
+          "tender-hearted",
+          "tiger-booted",
+          "smooth-faced",
+          "thunder-darting",
+          "sweet-suggesting",
+          "young-eyed"
+      ]
+
+      var comp_3 = [
+          "smilet",
+          "toast",
+          "cuckoo-bud",
+          "nose-herb",
+          "wafer-cake",
+          "pigeon-egg",
+          "welsh cheese",
+          "song",
+          "true-penny",
+          "valentine"    
+      ]
+      var comp_a = comp_1[Math.floor(Math.random() * comp_1.length)];
+      var comp_b = comp_2[Math.floor(Math.random() * comp_2.length)];
+      var comp_c = comp_3[Math.floor(Math.random() * comp_3.length)];  
+  
+  comp = `You ${comp_a}, ${comp_b} ${comp_c}!`;
+  document.getElementById("compDiv").textContent = comp;
+  }
+
+  function insults() {
+  var a = [
+      "artless",
+      "bawdy",
+      "beslubbering",
+      "churlish",
+      "cockered",
+      "clouted",
+      "craven",
+      "peevish",
+      "grizzled",
+      "greasy",
+      "jaded",
+      "waggish",
+      "purpled",
+      "rank",
+      "saucy",
+      "vacant",
+      "yeasty"
+  ]
+
+  var b = [
+      "beetle-headed",
+      "boil-brained",
+      "clapper-clawed",
+      "clay-brained",
+      "common-kissing",
+      "beef-witted",
+      "base-court",
+      "clay-brained",
+      "dog-hearted",
+      "evil-eyed",
+      "lily-livered",
+      "mad-bred",
+      "onion-eyed",
+      "paper-faced",
+      "rump-fed",
+      "shag-eared",
+      "white-livered"    
+  ]
+
+  var c = [
+      "apple-john",
+      "barnacle",
+      "boar-pig",
+      "bladder",
+      "bugbear",
+      "bum-bailey",
+      "canker-blossom",
+      "clot-pole",
+      "hedge-pig",
+      "dogfish",
+      "egg-shell",
+      "nut-hook",
+      "pantaloon",
+      "rabbit-sucker",
+      "snipe-younker"
+  ]
+  var a_choice = a[Math.floor(Math.random() * a.length)];
+  var b_choice = b[Math.floor(Math.random() * b.length)];
+  var c_choice = c[Math.floor(Math.random() * c.length)];  
+  
+  answer = `You ${a_choice}, ${b_choice} ${c_choice}!`;
+  document.getElementById("insultDiv").textContent = answer;
+  }
+</script>
+
+
+</body>
+</html>
