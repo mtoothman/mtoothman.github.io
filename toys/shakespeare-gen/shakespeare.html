@@ -119,30 +119,40 @@
       "snipe-younker"
   ]
 
-  var angie_phrases = [
+  var angie_a = [
       "Want a skittle to build post-ville?",
-      "My fault? Negativo. You mush bilge.",
+      "My fault? Negativo.",
       "No pro nova, siblano.",
-      "A vega. Dwell nugget, duds.",
-      "Entre! Kudos and viem vuludos.",
+      "A vega.",
+      "Entre!",
       "You're so nova.",
       "Do you mush kitty pow pow?",
-      "Aren't they dwell? I'm like, 'Psych. Order, please.'",
-      "Whoop, whoop, whoop, whoop! Wanna make muffins? C'mon, make those muffins!",
+      "Aren't they dwell?",
+      "Whoop, whoop, whoop, whoop!",
       "Fearsome sabots!",
       "Peep my sabots, gub.",
       "That movie was tetra bad, but you're way melty."
   ]
 
+  var angie_b = [
+  "You mush bilge.",
+  "Wanna make muffins? C'mon, make those muffins!",
+  "Dwell nugget, duds.",
+  "Kudos and viem vuludos.",
+  "I'm like, 'Psych. Order, please.'",
+  ]
+
   var a_choice = a[Math.floor(Math.random() * a.length)];
   var b_choice = b[Math.floor(Math.random() * b.length)];
   var c_choice = c[Math.floor(Math.random() * c.length)];
-  var angie_choice = angie_phrases[Math.floor(Math.random() * angie_phrases.length)];
+
+  var angie_a = angie_a[Math.floor(Math.random() * angie_a.length)];
+  var angie_b = angie_b[Math.floor(Math.random() * angie_b.length)];
   
   answer = `You ${a_choice}, ${b_choice} ${c_choice}!`;
 
   if (Math.random() < .3) {
-      answer = angie_choice
+      answer = `${angie_a} ${angie_b}`;
   }
 
   document.getElementById("resultDiv").textContent = answer;
