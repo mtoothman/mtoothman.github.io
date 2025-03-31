@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizza Bomb Delivery</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        canvas {
+            border: 2px solid #444;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            max-width: 100%;
+            max-height: 100vh;
+        }
+        
+        #game-container {
+            position: relative;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            text-align: center;
+        }
+        
+        #instructions {
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: #aaa;
+            font-size: 14px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="loading">Loading game...</div>
+    </div>
+    
+    <div id="instructions">
+        Use arrow keys to move. Deliver the pizza before the bomb in your head explodes!
+    </div>
+    
+    <!-- Main game script -->
+    <script src="pizza.js"></script>
+    
+    <script>
+        // Hide loading message once game loads
+        window.onload = function() {
+            document.getElementById('loading').style.display = 'none';
+        };
+    </script>
+</body>
+</html>
