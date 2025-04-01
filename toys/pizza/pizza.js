@@ -78,18 +78,41 @@ function generateRandomObstacles(count = 5) {
 
   return obstacles;
 }
-
 function generateRandomDeliveryPoint() {
   const width = 50;
   const height = 50;
   let x, y;
+  let tries = 0;
+  const maxTries = 100;
+  let isColliding = false;
 
   do {
     x = Math.random() * (canvas.width - width);
     y = Math.random() * (canvas.height - height);
-  } while (
-    Math.abs(x - player.x) < 100 && Math.abs(y - player.y) < 100
-  );
+
+    isColliding = false;
+
+    // Prevent spawning too close to player
+    if (Math.abs(x - player.x) < 100 && Math.abs(y - player.y) < 100) {
+      isColliding = true;
+    }
+
+    // Prevent overlapping with obstacles
+    const obstacles = levels[gameState.currentLevel].obstacles;
+    for (const obstacle of obstacles) {
+      if (
+        x < obstacle.x + obstacle.width &&
+        x + width > obstacle.x &&
+        y < obstacle.y + obstacle.height &&
+        y + height > obstacle.y
+      ) {
+        isColliding = true;
+        break;
+      }
+    }
+
+    tries++;
+  } while (isColliding && tries < maxTries);
 
   return { x, y, width, height };
 }
