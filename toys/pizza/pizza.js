@@ -371,8 +371,6 @@ function renderHUD() {
 
   const barWidth = 200;
   const barHeight = 8;
-  const barX = (canvas.width - barWidth) / 2;
-  const barY = 35;
 
   // Background bar
   ctx.fillStyle = '#222';
