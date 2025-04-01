@@ -215,47 +215,48 @@
     <!-- Main game script - updated to pizza.js -->
     <script src="pizza.js"></script>
     
-    <script>
-        // Initialize the game
-        window.onload = function() {
-            // Hide loading message
-            document.getElementById('loading').style.display = 'none';
-            
-            // Check if pizza.js has created a canvas or create one if it hasn't
-            if (!document.querySelector('#game-container canvas')) {
-                console.log('No canvas found, creating a placeholder');
-                const canvas = document.createElement('canvas');
-                canvas.width = 800;
-                canvas.height = 600;
-                document.getElementById('game-container').appendChild(canvas);
-                
-                // Optional: Draw something on the canvas to show it's working
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#111';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.font = '20px "Courier New"';
-                ctx.fillStyle = '#0f0';
-                ctx.textAlign = 'center';
-                ctx.fillText('Game canvas ready - waiting for pizza.js to initialize', canvas.width/2, canvas.height/2);
+<script>
+    window.onload = function() {
+        // Hide loading message
+        document.getElementById('loading').style.display = 'none';
+
+        // Call the game init function
+        if (typeof init === 'function') {
+            init();
+        }
+
+        // If canvas not found, create placeholder (fallback)
+        if (!document.querySelector('#game-container canvas')) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 800;
+            canvas.height = 600;
+            document.getElementById('game-container').appendChild(canvas);
+
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = '20px "Courier New"';
+            ctx.fillStyle = '#0f0';
+            ctx.textAlign = 'center';
+            ctx.fillText('Game canvas ready - waiting for pizza.js to initialize', canvas.width/2, canvas.height/2);
+        }
+
+        // Start game on any key press
+        document.addEventListener('keydown', function() {
+            const storyIntro = document.getElementById('story-intro');
+            storyIntro.classList.add('hidden');
+
+            const canvas = document.querySelector('#game-container canvas');
+            if (canvas) {
+                canvas.focus();
             }
-            
-            // Add event listener for keydown to hide story intro
-            document.addEventListener('keydown', function(event) {
-                const storyIntro = document.getElementById('story-intro');
-                storyIntro.classList.add('hidden');
-                
-                // Focus on the game canvas after hiding intro
-                const canvas = document.querySelector('#game-container canvas');
-                if (canvas) {
-                    canvas.focus();
-                }
-                
-                // Initialize or restart the game if needed
-                if (typeof initGame === 'function') {
-                    initGame();
-                }
-            }, { once: true });
-        };
-    </script>
+
+            if (typeof initGame === 'function') {
+                initGame();
+            }
+        }, { once: true });
+    };
+</script>
+
 </body>
 </html>
