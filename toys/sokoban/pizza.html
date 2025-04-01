@@ -27,6 +27,7 @@
             max-height: 80vh;
             position: relative;
             z-index: 1;
+            display: block; /* Ensure canvas is visible */
         }
         
         canvas::before {
@@ -44,6 +45,11 @@
         #game-container {
             position: relative;
             margin: 20px 0;
+            width: 800px; /* Set explicit width */
+            height: 600px; /* Set explicit height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
         #loading {
@@ -75,16 +81,18 @@
             border: 1px solid #333;
             text-align: center;
             box-shadow: 0 0 20px rgba(54, 229, 252, 0.3);
-            position: relative;
-            z-index: 1;
+            position: absolute; /* Changed to absolute positioning */
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10; /* Higher z-index to ensure it's above the game */
             overflow: hidden;
-            /* Added transition for smooth disappearing effect */
             transition: opacity 0.5s ease, transform 0.5s ease;
         }
         
         #story-intro.hidden {
             opacity: 0;
-            transform: translateY(-100%);
+            transform: translateX(-50%) translateY(-100%);
             pointer-events: none;
         }
         
@@ -163,7 +171,6 @@
             margin-bottom: 15px;
         }
         
-        /* Added prompt to press any key */
         .press-key-prompt {
             color: #36e5fc;
             font-size: 18px;
@@ -179,6 +186,11 @@
     </style>
 </head>
 <body>
+    <div id="game-container">
+        <div id="loading">Loading game...</div>
+        <!-- The canvas will be inserted here by the pizza.js script -->
+    </div>
+    
     <div id="story-intro">
         <div class="dateline">DATELINE 2347, HOUNDDOGS NEOZA</div>
         <div class="neon-title">
@@ -193,36 +205,56 @@
             <p>Hunted by cybernetic enforcers and betrayed by those he trusts, Dom must race against time to deliver the ultimate payload — a slice that could restore freedom to the masses. But in a city where the crust is thin and the stakes are high, one wrong move could mean getting burned.</p>
         </div>
         
-        <!-- Added prompt to press any key -->
         <div class="press-key-prompt">PRESS ANY KEY TO START</div>
-    </div>
-
-    <div id="game-container">
-        <div id="loading">Loading game...</div>
     </div>
     
     <div id="instructions">
         Use arrow keys to move. Deliver the pizza before the bomb in your head explodes!
     </div>
     
-    <!-- Main game script -->
-    <script src="game.js"></script>
+    <!-- Main game script - updated to pizza.js -->
+    <script src="pizza.js"></script>
     
     <script>
-        // Hide loading message once game loads
+        // Initialize the game
         window.onload = function() {
+            // Hide loading message
             document.getElementById('loading').style.display = 'none';
+            
+            // Check if pizza.js has created a canvas or create one if it hasn't
+            if (!document.querySelector('#game-container canvas')) {
+                console.log('No canvas found, creating a placeholder');
+                const canvas = document.createElement('canvas');
+                canvas.width = 800;
+                canvas.height = 600;
+                document.getElementById('game-container').appendChild(canvas);
+                
+                // Optional: Draw something on the canvas to show it's working
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#111';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.font = '20px "Courier New"';
+                ctx.fillStyle = '#0f0';
+                ctx.textAlign = 'center';
+                ctx.fillText('Game canvas ready - waiting for pizza.js to initialize', canvas.width/2, canvas.height/2);
+            }
             
             // Add event listener for keydown to hide story intro
             document.addEventListener('keydown', function(event) {
                 const storyIntro = document.getElementById('story-intro');
                 storyIntro.classList.add('hidden');
                 
-                // Optional: Remove the element completely after transition completes
-                setTimeout(function() {
-                    storyIntro.style.display = 'none';
-                }, 500);
-            }, { once: true }); // Using { once: true } to ensure it only happens once
+                // Focus on the game canvas after hiding intro
+                const canvas = document.querySelector('#game-container canvas');
+                if (canvas) {
+                    canvas.focus();
+                }
+                
+                // Initialize or restart the game if needed
+                if (typeof initGame === 'function') {
+                    initGame();
+                }
+            }, { once: true });
         };
     </script>
 </body>
