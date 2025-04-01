@@ -37,8 +37,10 @@ const player = {
   height: 32,
   speed: 5,
   hasPizza: true,
-  direction: 'down', // 'up', 'down', 'left', 'right'
-  isMoving: false
+  direction: 'down',
+  isMoving: false,
+  health: 3, // ❤️ start with 3 hearts
+  maxHealth: 3
 };
 
 // Controls
@@ -195,14 +197,20 @@ function updatePlayer() {
   const currentLevel = levels[gameState.currentLevel];
   for (const obstacle of currentLevel.obstacles) {
     if (checkCollision(player, obstacle)) {
-      // Simple collision response - push player back
-      if (player.direction === 'up') player.y += player.speed;
-      if (player.direction === 'down') player.y -= player.speed;
-      if (player.direction === 'left') player.x += player.speed;
-      if (player.direction === 'right') player.x -= player.speed;
+      player.health--;
+
+      if (player.health <= 0) {
+        gameOver();
+      } else {
+        // Optional: Push the player back slightly or flash
+        player.x = 400;
+        player.y = 300;
+      }
+
+      return; // only count 1 hit per frame
     }
   }
-  
+
   // Check delivery
   if (player.hasPizza && checkCollision(player, currentLevel.deliveryPoint)) {
     successfulDelivery();
@@ -243,6 +251,7 @@ function startGame() {
   player.x = 400;
   player.y = 300;
   player.hasPizza = true;
+  player.health = player.maxHealth;
 
   levels[0].obstacles = generateRandomObstacles();
   levels[0].deliveryPoint = generateRandomDeliveryPoint();
@@ -349,6 +358,13 @@ function renderHUD() {
   ctx.strokeStyle = '#36e5fc';
   ctx.lineWidth = 2;
   ctx.strokeRect(barX, barY, barWidth, barHeight);
+  const heartSize = 16;
+  for (let i = 0; i < player.maxHealth; i++) {
+    const filled = i < player.health;
+    ctx.font = '16px Arial';
+    ctx.fillStyle = filled ? '#f44' : '#444';
+    ctx.fillText('❤', 20 + i * (heartSize + 6), 60); // adjust spacing if needed
+  }
 }
 
 function renderGameOver() {
