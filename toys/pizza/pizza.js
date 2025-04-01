@@ -6,6 +6,19 @@ canvas.width = 800;
 canvas.height = 600;
 document.getElementById('game-container').appendChild(canvas);
 
+// After creating the canvas and getting ctx:
+ctx.imageSmoothingEnabled = false;  // keep pixel art sharp when scaled&#8203;:contentReference[oaicite:3]{index=3}
+
+// Load sprite images
+const playerImg = new Image();
+playerImg.src = "driver.png";      // path to player sprite image (Dom Slice)
+const deliveryImg = new Image();
+deliveryImg.src = "pizza.png";    // path to delivery point sprite (pizza box)
+
+// (Optional) You can set up onload handlers if needed:
+playerImg.onload = () => console.log("Player sprite loaded");
+deliveryImg.onload = () => console.log("Delivery sprite loaded");
+
 
 // Game state
 const gameState = {
@@ -258,40 +271,53 @@ function renderGame() {
   ctx.fillStyle = '#36e5fc';
   ctx.fill();
   
-  // Draw player
-  ctx.fillStyle = player.hasPizza ? '#f00' : '#00f';
-  ctx.fillRect(player.x, player.y, player.width, player.height);
+  // Draw player (Dom Slice)
+  if (playerImg.complete) {
+    // Image loaded: draw the sprite
+    ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+    // (drawImage(image, dx, dy, dWidth, dHeight) draws the image at (dx,dy) scaled to dWidth×dHeight&#8203;:contentReference[oaicite:6]{index=6})
+  } else {
+    // Fallback: draw a colored rectangle if sprite not ready
+    ctx.fillStyle = player.hasPizza ? "#f00" : "#00f";
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+  }
   
   // Draw HUD (Heads-Up Display)
   renderHUD();
 }
-
 function renderHUD() {
-  // Timer
-  ctx.fillStyle = gameState.bombTimer < 10 ? '#f00' : '#fff';
-  ctx.font = '24px Arial';
-  ctx.textAlign = 'left';
-  ctx.fillText(`Time: ${Math.ceil(gameState.bombTimer)}`, 20, 30);
-  
-  // Score
-  ctx.fillStyle = '#fff';
-  ctx.textAlign = 'right';
-  ctx.fillText(`Score: ${gameState.score}`, canvas.width - 20, 30);
-  
-  // Timer bar
+  const hudPadding = 10;
+  const hudHeight = 50;
   const barWidth = 200;
   const barHeight = 20;
   const barX = (canvas.width - barWidth) / 2;
-  const barY = 20;
-  
-  // Background
+  const barY = hudPadding + 10;
+
+  // === HUD background panel ===
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+  ctx.fillRect(0, 0, canvas.width, hudHeight + hudPadding * 2);
+
+  // === Pixel-style text ===
+  ctx.fillStyle = '#36e5fc';
+  ctx.font = '16px "Press Start 2P", monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`SCORE: ${gameState.score}`, 20, 30);
+
+  ctx.textAlign = 'right';
+  ctx.fillText(`TIME: ${Math.ceil(gameState.bombTimer)}`, canvas.width - 20, 30);
+
+  // === Timer bar ===
   ctx.fillStyle = '#333';
   ctx.fillRect(barX, barY, barWidth, barHeight);
-  
-  // Fill based on remaining time
+
   const fillWidth = (gameState.bombTimer / 60) * barWidth;
   ctx.fillStyle = gameState.bombTimer < 10 ? '#f00' : '#0f0';
   ctx.fillRect(barX, barY, fillWidth, barHeight);
+
+  // === Border for timer bar ===
+  ctx.strokeStyle = '#36e5fc';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(barX, barY, barWidth, barHeight);
 }
 
 function renderGameOver() {
