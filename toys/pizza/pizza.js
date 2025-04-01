@@ -346,18 +346,6 @@ function renderHUD() {
   ctx.textAlign = 'right';
   ctx.fillText(`TIME: ${Math.ceil(gameState.bombTimer)}`, canvas.width - 20, 30);
 
-  // === Timer bar ===
-  ctx.fillStyle = '#333';
-  ctx.fillRect(barX, barY, barWidth, barHeight);
-
-  const fillWidth = (gameState.bombTimer / 60) * barWidth;
-  ctx.fillStyle = gameState.bombTimer < 10 ? '#f00' : '#0f0';
-  ctx.fillRect(barX, barY, fillWidth, barHeight);
-
-  // === Border for timer bar ===
-  ctx.strokeStyle = '#36e5fc';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(barX, barY, barWidth, barHeight);
   const heartSize = 16;
   for (let i = 0; i < player.maxHealth; i++) {
     const filled = i < player.health;
