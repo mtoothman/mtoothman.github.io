@@ -326,32 +326,75 @@ function renderGame() {
   renderHUD();
 }
 function renderHUD() {
-  const hudPadding = 10;
-  const hudHeight = 50;
-  const barWidth = 200;
-  const barHeight = 20;
-  const barX = (canvas.width - barWidth) / 2;
-  const barY = hudPadding + 10;
+  const hudHeight = 60;
+  const padding = 10;
 
-  // === HUD background panel ===
+  // === Top HUD background strip ===
   ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-  ctx.fillRect(0, 0, canvas.width, hudHeight + hudPadding * 2);
+  ctx.fillRect(0, 0, canvas.width, hudHeight);
 
-  // === Pixel-style text ===
+  // === Score (left) ===
   ctx.fillStyle = '#36e5fc';
   ctx.font = '16px "Press Start 2P", monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`SCORE: ${gameState.score}`, 20, 30);
+  ctx.fillText(`SCORE: ${gameState.score}`, 20, 25);
 
+  // === Timer (right) ===
   ctx.textAlign = 'right';
-  ctx.fillText(`TIME: ${Math.ceil(gameState.bombTimer)}`, canvas.width - 20, 30);
+  ctx.fillText(`TIME: ${Math.ceil(gameState.bombTimer)}`, canvas.width - 20, 25);
 
+
+  // === Pixel-style countdown timer bar ===
+  const barX = (canvas.width - barWidth) / 2;
+  const barY = 35;
+
+  // Draw background using hard edges
+  ctx.fillStyle = '#000';
+  ctx.fillRect(barX, barY, barWidth, barHeight);
+
+  // Pixel chunk size
+  const chunkSize = 8; // pixel block width
+  const chunks = Math.floor(barWidth / chunkSize);
+  const chunksRemaining = Math.ceil((gameState.bombTimer / 60) * chunks);
+
+  // Draw pixel chunks
+  for (let i = 0; i < chunksRemaining; i++) {
+    const x = barX + i * chunkSize;
+    ctx.fillStyle = gameState.bombTimer < 10 ? '#f00' : '#0f0';
+    ctx.fillRect(x, barY, chunkSize - 1, barHeight); // -1 to give pixel gap
+  }
+
+  // Draw pixel border
+  ctx.strokeStyle = '#36e5fc';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+  const barWidth = 200;
+  const barHeight = 8;
+  const barX = (canvas.width - barWidth) / 2;
+  const barY = 35;
+
+  // Background bar
+  ctx.fillStyle = '#222';
+  ctx.fillRect(barX, barY, barWidth, barHeight);
+
+  // Fill based on remaining time
+  const fillWidth = (gameState.bombTimer / 60) * barWidth;
+  ctx.fillStyle = gameState.bombTimer < 10 ? '#f00' : '#0f0';
+  ctx.fillRect(barX, barY, fillWidth, barHeight);
+
+  // Optional: border
+  ctx.strokeStyle = '#36e5fc';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+  // === Hearts (left-aligned below score) ===
+  ctx.textAlign = 'left';
   const heartSize = 16;
   for (let i = 0; i < player.maxHealth; i++) {
     const filled = i < player.health;
-    ctx.font = '16px Arial';
     ctx.fillStyle = filled ? '#f44' : '#444';
-    ctx.fillText('❤', 20 + i * (heartSize + 6), 60); // adjust spacing if needed
+    ctx.fillText('❤', 20 + i * (heartSize + 6), 55);
   }
 }
 
