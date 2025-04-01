@@ -39,14 +39,29 @@ const keys = {
 // Level data (obstacles, delivery locations)
 const levels = [
   {
-    obstacles: [
-      { x: 100, y: 100, width: 50, height: 200 },
-      { x: 300, y: 250, width: 200, height: 50 }
-    ],
+    obstacles: [], // will be generated dynamically
     deliveryPoint: { x: 700, y: 500, width: 50, height: 50 }
   }
-  // Add more levels as needed
 ];
+
+function generateRandomObstacles(count = 3) {
+  const obstacles = [];
+
+  for (let i = 0; i < count; i++) {
+    const width = 50 + Math.random() * 100;
+    const height = 50 + Math.random() * 100;
+    const x = Math.random() * (canvas.width - width);
+    const y = Math.random() * (canvas.height - height);
+
+    // Avoid placing obstacles too close to the player spawn or delivery point
+    if (Math.abs(x - player.x) < 100 && Math.abs(y - player.y) < 100) continue;
+    if (Math.abs(x - 700) < 100 && Math.abs(y - 500) < 100) continue;
+
+    obstacles.push({ x, y, width, height });
+  }
+
+  return obstacles;
+}
 
 // Input handlers
 function setupInputHandlers() {
