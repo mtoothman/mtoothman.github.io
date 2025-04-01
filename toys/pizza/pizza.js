@@ -44,25 +44,28 @@ const levels = [
   }
 ];
 
-function generateRandomObstacles(count = 3) {
+function generateRandomObstacles(count = 5) {
   const obstacles = [];
+  let attempts = 0;
 
-  for (let i = 0; i < count; i++) {
-    const width = 50 + Math.random() * 100;
-    const height = 50 + Math.random() * 100;
+  while (obstacles.length < count && attempts < count * 10) {
+    const width = 50 + Math.random() * 80;
+    const height = 50 + Math.random() * 80;
     const x = Math.random() * (canvas.width - width);
     const y = Math.random() * (canvas.height - height);
 
-    // Avoid placing obstacles too close to the player spawn or delivery point
-    if (Math.abs(x - player.x) < 100 && Math.abs(y - player.y) < 100) continue;
-    if (Math.abs(x - 700) < 100 && Math.abs(y - 500) < 100) continue;
+    const tooCloseToPlayer = Math.abs(x - player.x) < 80 && Math.abs(y - player.y) < 80;
+    const tooCloseToDelivery = Math.abs(x - 700) < 80 && Math.abs(y - 500) < 80;
 
-    obstacles.push({ x, y, width, height });
+    if (!tooCloseToPlayer && !tooCloseToDelivery) {
+      obstacles.push({ x, y, width, height });
+    }
+
+    attempts++;
   }
 
   return obstacles;
 }
-
 // Input handlers
 function setupInputHandlers() {
   window.addEventListener('keydown', (e) => {
