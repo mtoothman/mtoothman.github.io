@@ -257,10 +257,6 @@ function renderMenu() {
   ctx.fillStyle = '#fff';
   ctx.font = '36px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText('PIZZA BOMB DELIVERY', canvas.width/2, 200);
-  ctx.font = '24px Arial';
-  ctx.fillText('Press SPACE to start', canvas.width/2, 300);
-  ctx.fillText('High Score: ' + gameState.highScore, canvas.width/2, 350);
 }
 
 function renderGame() {
