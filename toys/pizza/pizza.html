@@ -180,6 +180,20 @@
             margin-top: 20px;
             animation: pulse 1.5s infinite;
         }
+       #hud {
+         font-family: 'Press Start 2P', monospace;
+         font-size: 12px;
+         color: #36e5fc;
+         background: rgba(0, 0, 0, 0.8);
+         padding: 8px 16px;
+         width: 800px;
+         text-align: space-between;
+         display: flex;
+         justify-content: space-between;
+         box-shadow: 0 0 10px #36e5fc;
+         margin-top: 16px;
+       }
+        
         
         @keyframes pulse {
             0% { opacity: 0.6; }
@@ -189,6 +203,11 @@
     </style>
 </head>
 <body>
+    <div id="hud">
+        <span id="score">SCORE: 0</span>
+        <span id="timer">TIME: 60</span>
+    </div>
+
     <div id="game-container">
         <div id="loading">Loading game...</div>
         <!-- The canvas will be inserted here by the pizza.js script -->

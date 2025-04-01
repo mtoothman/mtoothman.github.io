@@ -340,6 +340,8 @@ function gameLoop(timestamp) {
     updatePlayer();
     updateTimer();
   }
+  document.getElementById('score').textContent = `SCORE: ${gameState.score}`;
+  document.getElementById('timer').textContent = `TIME: ${Math.ceil(gameState.bombTimer)}`;
   
   render();
   requestAnimationFrame(gameLoop);
