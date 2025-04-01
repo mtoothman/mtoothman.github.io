@@ -39,11 +39,10 @@ const keys = {
 // Level data (obstacles, delivery locations)
 const levels = [
   {
-    obstacles: [], // will be generated dynamically
-    deliveryPoint: { x: 700, y: 500, width: 50, height: 50 }
+    obstacles: [],
+    deliveryPoint: {} // will be assigned dynamically
   }
 ];
-
 function generateRandomObstacles(count = 5) {
   const obstacles = [];
   let attempts = 0;
@@ -66,6 +65,22 @@ function generateRandomObstacles(count = 5) {
 
   return obstacles;
 }
+
+function generateRandomDeliveryPoint() {
+  const width = 50;
+  const height = 50;
+  let x, y;
+
+  do {
+    x = Math.random() * (canvas.width - width);
+    y = Math.random() * (canvas.height - height);
+  } while (
+    Math.abs(x - player.x) < 100 && Math.abs(y - player.y) < 100
+  );
+
+  return { x, y, width, height };
+}
+
 // Input handlers
 function setupInputHandlers() {
   window.addEventListener('keydown', (e) => {
@@ -157,20 +172,15 @@ function updateTimer() {
     gameOver();
   }
 }
-
 function successfulDelivery() {
-  // Reset bomb timer
   gameState.bombTimer = 60;
-  
-  // Update score
   gameState.score++;
-  
-  // Move to next level or cycle back
   gameState.currentLevel = (gameState.currentLevel + 1) % levels.length;
-  
-  // Reset player position for new level
   player.x = 400;
   player.y = 300;
+
+  levels[gameState.currentLevel].obstacles = generateRandomObstacles();
+  levels[gameState.currentLevel].deliveryPoint = generateRandomDeliveryPoint();
 }
 
 function gameOver() {
@@ -179,7 +189,6 @@ function gameOver() {
     gameState.highScore = gameState.score;
   }
 }
-
 function startGame() {
   gameState.status = 'playing';
   gameState.score = 0;
@@ -188,6 +197,9 @@ function startGame() {
   player.x = 400;
   player.y = 300;
   player.hasPizza = true;
+
+  levels[0].obstacles = generateRandomObstacles();
+  levels[0].deliveryPoint = generateRandomDeliveryPoint();
 }
 
 // Rendering
@@ -223,15 +235,28 @@ function renderGame() {
   for (const obstacle of currentLevel.obstacles) {
     ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
   }
-  
-  // Draw delivery point
-  ctx.fillStyle = '#0f0';
-  ctx.fillRect(
-    currentLevel.deliveryPoint.x, 
-    currentLevel.deliveryPoint.y, 
-    currentLevel.deliveryPoint.width, 
-    currentLevel.deliveryPoint.height
-  );
+
+  // Animate pulse using sine wave
+  // Speed up pulse as timer gets lower
+  const timeFactor = Math.max(0.5, gameState.bombTimer / 60); // 1.0 → 0.5
+  const pulseSpeed = 1 / timeFactor; // Faster as time goes down
+  const pulse = Math.sin(performance.now() / (200 / pulseSpeed)) * 5 + 10;
+  const dp = currentLevel.deliveryPoint;
+  const centerX = dp.x + dp.width / 2;
+  const centerY = dp.y + dp.height / 2;
+
+  // Glowing ring
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, pulse + 20, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(54, 229, 252, 0.2)';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  // Pulsing inner fill
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, pulse, 0, Math.PI * 2);
+  ctx.fillStyle = '#36e5fc';
+  ctx.fill();
   
   // Draw player
   ctx.fillStyle = player.hasPizza ? '#f00' : '#00f';
