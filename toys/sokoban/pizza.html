@@ -78,6 +78,14 @@
             position: relative;
             z-index: 1;
             overflow: hidden;
+            /* Added transition for smooth disappearing effect */
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        #story-intro.hidden {
+            opacity: 0;
+            transform: translateY(-100%);
+            pointer-events: none;
         }
         
         #story-intro::before {
@@ -154,10 +162,24 @@
         .synopsis p {
             margin-bottom: 15px;
         }
+        
+        /* Added prompt to press any key */
+        .press-key-prompt {
+            color: #36e5fc;
+            font-size: 18px;
+            margin-top: 20px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
     </style>
 </head>
 <body>
-        <div id="story-intro">
+    <div id="story-intro">
         <div class="dateline">DATELINE 2347, HOUNDDOGS NEOZA</div>
         <div class="neon-title">
             <span class="neon-red">PIZZA</span>&nbsp;
@@ -170,6 +192,9 @@
             
             <p>Hunted by cybernetic enforcers and betrayed by those he trusts, Dom must race against time to deliver the ultimate payload — a slice that could restore freedom to the masses. But in a city where the crust is thin and the stakes are high, one wrong move could mean getting burned.</p>
         </div>
+        
+        <!-- Added prompt to press any key -->
+        <div class="press-key-prompt">PRESS ANY KEY TO START</div>
     </div>
 
     <div id="game-container">
@@ -187,6 +212,17 @@
         // Hide loading message once game loads
         window.onload = function() {
             document.getElementById('loading').style.display = 'none';
+            
+            // Add event listener for keydown to hide story intro
+            document.addEventListener('keydown', function(event) {
+                const storyIntro = document.getElementById('story-intro');
+                storyIntro.classList.add('hidden');
+                
+                // Optional: Remove the element completely after transition completes
+                setTimeout(function() {
+                    storyIntro.style.display = 'none';
+                }, 500);
+            }, { once: true }); // Using { once: true } to ensure it only happens once
         };
     </script>
 </body>
