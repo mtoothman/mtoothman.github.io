@@ -61,16 +61,26 @@ function generateRandomObstacles(count = 5) {
   let attempts = 0;
 
   while (obstacles.length < count && attempts < count * 10) {
-    const width = 50 + Math.random() * 80;
-    const height = 50 + Math.random() * 80;
-    const x = Math.random() * (canvas.width - width);
-    const y = Math.random() * (canvas.height - height);
+    const width = 60 + Math.random() * 60;
+    const height = 30 + Math.random() * 20;
+
+    // Random direction: true = horizontal, false = vertical
+    const horizontal = Math.random() < 0.5;
+
+    let x = Math.random() * (canvas.width - width);
+    let y = Math.random() * (canvas.height - height);
 
     const tooCloseToPlayer = Math.abs(x - player.x) < 80 && Math.abs(y - player.y) < 80;
     const tooCloseToDelivery = Math.abs(x - 700) < 80 && Math.abs(y - 500) < 80;
 
     if (!tooCloseToPlayer && !tooCloseToDelivery) {
-      obstacles.push({ x, y, width, height });
+      obstacles.push({
+        x, y,
+        width: horizontal ? width : height,
+        height: horizontal ? height : width,
+        vx: horizontal ? (Math.random() < 0.5 ? -1 : 1) * 1.5 : 0,
+        vy: horizontal ? 0 : (Math.random() < 0.5 ? -1 : 1) * 1.5
+      });
     }
 
     attempts++;
@@ -263,8 +273,10 @@ function renderGame() {
   const currentLevel = levels[gameState.currentLevel];
   
   // Draw obstacles
-  ctx.fillStyle = '#555';
+  ctx.fillStyle = '#888'; // default
   for (const obstacle of currentLevel.obstacles) {
+    // Differentiate horizontal/vertical visually
+    ctx.fillStyle = obstacle.vx !== 0 ? '#aa3333' : '#3333aa';
     ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
   }
 
@@ -348,6 +360,26 @@ function renderGameOver() {
   ctx.fillText(`Score: ${gameState.score}`, canvas.width/2, 250);
   ctx.fillText('Press SPACE to restart', canvas.width/2, 300);
 }
+function updateObstacles() {
+  const currentLevel = levels[gameState.currentLevel];
+
+  for (const obs of currentLevel.obstacles) {
+    obs.x += obs.vx;
+    obs.y += obs.vy;
+
+    // Horizontal wrapping
+    if (obs.vx !== 0) {
+      if (obs.x > canvas.width) obs.x = -obs.width;
+      if (obs.x + obs.width < 0) obs.x = canvas.width;
+    }
+
+    // Vertical wrapping
+    if (obs.vy !== 0) {
+      if (obs.y > canvas.height) obs.y = -obs.height;
+      if (obs.y + obs.height < 0) obs.y = canvas.height;
+    }
+  }
+}
 
 // Game loop
 let lastTime = 0;
@@ -358,10 +390,12 @@ function gameLoop(timestamp) {
   if (gameState.status === 'playing') {
     updatePlayer();
     updateTimer();
+    updateObstacles(); // <- Add this line
+
   }
   document.getElementById('score').textContent = `SCORE: ${gameState.score}`;
   document.getElementById('timer').textContent = `TIME: ${Math.ceil(gameState.bombTimer)}`;
-  
+
   render();
   requestAnimationFrame(gameLoop);
 }
