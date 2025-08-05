@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ouroboros Pizza - Coming Soon</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Trajan Pro', 'Optima', 'Georgia', serif;
+            background: #f4f1e8;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(139, 69, 19, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(139, 69, 19, 0.1) 0%, transparent 50%);
+            color: #3d2914;
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 800px;
+            padding: 2rem;
+        }
+        
+        .logo {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 2rem;
+            filter: sepia(20%) contrast(1.2);
+            transition: filter 0.3s ease;
+        }
+        
+        .logo:hover {
+            filter: sepia(30%) contrast(1.3);
+        }
+        
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+            color: #8b4513;
+            font-weight: 300;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            text-shadow: 1px 1px 2px rgba(139, 69, 19, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.6rem;
+            margin-bottom: 2rem;
+            color: #5d4037;
+            font-style: italic;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+        }
+        
+        .description {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            margin-bottom: 3rem;
+            color: #4a4a4a;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            font-weight: 400;
+        }
+        
+        .pizza-slice {
+            font-size: 3rem;
+            margin: 1rem 0;
+            animation: rotate 10s linear infinite;
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .coming-soon {
+            background: rgba(244, 241, 232, 0.9);
+            padding: 3rem;
+            margin: 3rem 0;
+            border: 3px solid #8b4513;
+            border-style: double;
+            position: relative;
+            box-shadow: 
+                inset 0 0 20px rgba(139, 69, 19, 0.1),
+                0 5px 15px rgba(139, 69, 19, 0.2);
+        }
+        
+        .coming-soon::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 1px solid #8b4513;
+            border-style: solid;
+            pointer-events: none;
+        }
+        
+        .contact {
+            margin-top: 3rem;
+            font-size: 1.1rem;
+            color: #6d4c41;
+            font-weight: 400;
+        }
+        
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            color: #8d6e63;
+            font-style: italic;
+            letter-spacing: 0.05em;
+        }
+        
+        .motto {
+            font-size: 1.3rem;
+            margin: 2rem 0;
+            color: #8b4513;
+            font-style: italic;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="in_pizza_veritas.png" alt="In Pizza Veritas - Ouroboros Symbol">
+        </div>
+        <h1>OUROBOROS PIZZA</h1>
+        <div class="subtitle">Where every slice completes the circle</div>
+        
+        <div class="coming-soon">
+            <h2 style="color: #8b4513; margin: 1rem 0; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase;">COMING SOON</h2>
+            <div class="description">
+                Like the ancient ouroboros consuming its own tail in an endless cycle of renewal, 
+                our pizza is a timeless ideal of flavor. From the first bite to the last,
+                each slice leads seamlessly to the next in an infinite loop of deliciousness.
+                <br><br>
+                Join us for pizza that completes you.
+            </div>
+        </div>
+        
+        <div class="contact">
+            <p>∞ Autochthonic perfection awaits ∞</p>
+            <p>Stay tuned for our grand opening!</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <a href="index.html" style="color: #8d6e63; text-decoration: none;">ouroboros.pizza</a> | The eternal slice
+    </div>
+</body>
+</html>
