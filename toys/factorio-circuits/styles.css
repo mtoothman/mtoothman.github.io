@@ -1,0 +1,499 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    background-color: #1a1a1a;
+    color: #ffffff;
+    overflow-x: hidden;
+}
+
+.header {
+    background-color: #2d2d2d;
+    padding: 20px;
+    border-bottom: 2px solid #444;
+    text-align: center;
+}
+
+.header h1 {
+    color: #ff6b35;
+    margin: 10px 0;
+}
+
+.header p {
+    color: #cccccc;
+}
+
+.game-container {
+    display: grid;
+    grid-template-columns: 300px 1fr 250px;
+    grid-template-rows: 1fr;
+    height: calc(100vh - 160px);
+    gap: 10px;
+    padding: 10px;
+}
+
+.tutorial-panel {
+    background-color: #2d2d2d;
+    border: 2px solid #444;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.tutorial-panel h2 {
+    color: #ff6b35;
+    margin-bottom: 15px;
+}
+
+.tutorial-controls {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.level-selector-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.level-selector-row label {
+    color: #ccc;
+    font-size: 14px;
+    min-width: 90px;
+}
+
+#level-select {
+    flex: 1;
+    background-color: #444;
+    color: white;
+    border: 2px solid #666;
+    padding: 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+#level-select:hover {
+    border-color: #777;
+}
+
+#level-select:focus {
+    outline: none;
+    border-color: #ff6b35;
+}
+
+.tutorial-controls button {
+    background-color: #444;
+    color: white;
+    border: 2px solid #666;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+.tutorial-controls button:hover:not(:disabled) {
+    background-color: #555;
+    border-color: #777;
+}
+
+.tutorial-controls button:disabled {
+    background-color: #333;
+    color: #666;
+    cursor: not-allowed;
+    border-color: #444;
+}
+
+.hint-panel {
+    margin-top: 15px;
+    background-color: #3d3d3d;
+    padding: 15px;
+    border-left: 4px solid #ff6b35;
+    border-radius: 4px;
+}
+
+.hint-panel.hidden {
+    display: none;
+}
+
+.game-area {
+    background-color: #0f0f0f;
+    border: 2px solid #444;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#game-canvas {
+    border: 1px solid #333;
+    background-color: #1a1a1a;
+    cursor: crosshair;
+}
+
+.components-panel {
+    background-color: #2d2d2d;
+    border: 2px solid #444;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.components-panel h3 {
+    color: #ff6b35;
+    margin-bottom: 15px;
+}
+
+.component-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.component-item {
+    background-color: #3d3d3d;
+    border: 2px solid #555;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.component-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+}
+
+.component-item:hover {
+    background-color: #4d4d4d;
+    border-color: #666;
+    transform: translateY(-2px);
+}
+
+.component-item.selected {
+    border-color: #ff6b35;
+    background-color: #4a2d1a;
+}
+
+.component-icon {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.constant-combinator {
+    background-color: #4a90e2;
+    color: white;
+}
+
+.constant-combinator::after {
+    content: "C";
+}
+
+.arithmetic-combinator {
+    background-color: #7ed321;
+    color: black;
+}
+
+.arithmetic-combinator::after {
+    content: "+";
+}
+
+.decider-combinator {
+    background-color: #f5a623;
+    color: black;
+}
+
+.decider-combinator::after {
+    content: "?";
+}
+
+.lamp {
+    background-color: #f8e71c;
+    color: black;
+}
+
+.lamp::after {
+    content: "💡";
+}
+
+.red-wire {
+    background-color: #d0021b;
+    color: white;
+}
+
+.red-wire::after {
+    content: "—";
+}
+
+.green-wire {
+    background-color: #50e3c2;
+    color: black;
+}
+
+.green-wire::after {
+    content: "—";
+}
+
+.info-toggle {
+    background: none;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: auto;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.info-toggle:hover {
+    background-color: #555;
+    color: #ff6b35;
+}
+
+.component-description {
+    background-color: #2a2a2a;
+    border-top: 1px solid #555;
+    padding: 10px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #ccc;
+    animation: slideDown 0.3s ease;
+}
+
+.component-description.hidden {
+    display: none;
+}
+
+.component-description p {
+    margin: 0;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        padding: 0 10px;
+    }
+    to {
+        opacity: 1;
+        max-height: 100px;
+        padding: 10px;
+    }
+}
+
+.status-panel {
+    background-color: #2d2d2d;
+    border: 2px solid #444;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100px;
+}
+
+.signal-display h4 {
+    color: #ff6b35;
+    margin-bottom: 10px;
+}
+
+#signals-list {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.signal-item {
+    background-color: #444;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    border: 1px solid #666;
+}
+
+.level-progress {
+    text-align: center;
+}
+
+.progress-bar {
+    width: 200px;
+    height: 20px;
+    background-color: #444;
+    border: 2px solid #666;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+#progress-fill {
+    height: 100%;
+    background-color: #ff6b35;
+    width: 20%;
+    transition: width 0.3s ease;
+}
+
+/* Configuration Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background-color: #2d2d2d;
+    border: 2px solid #555;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #555;
+    background-color: #3d3d3d;
+    border-radius: 6px 6px 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #ff6b35;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    color: #ff6b35;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.config-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.config-panel.hidden {
+    display: none;
+}
+
+.config-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.config-row label {
+    min-width: 80px;
+    color: #ccc;
+    font-size: 14px;
+}
+
+.config-row select,
+.config-row input {
+    flex: 1;
+    padding: 8px;
+    background-color: #444;
+    border: 1px solid #666;
+    border-radius: 4px;
+    color: white;
+    font-family: inherit;
+}
+
+.config-row select:focus,
+.config-row input:focus {
+    outline: none;
+    border-color: #ff6b35;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #555;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    background-color: #3d3d3d;
+    border-radius: 0 0 6px 6px;
+}
+
+.modal-footer button {
+    padding: 8px 16px;
+    border: 2px solid #666;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+#config-save {
+    background-color: #ff6b35;
+    color: white;
+    border-color: #ff6b35;
+}
+
+#config-save:hover {
+    background-color: #e55a2b;
+}
+
+#config-cancel {
+    background-color: #666;
+    color: white;
+}
+
+#config-cancel:hover {
+    background-color: #777;
+}
+
+@media (max-width: 1200px) {
+    .game-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        height: auto;
+    }
+    
+    #game-canvas {
+        width: 100%;
+        max-width: 800px;
+    }
+}

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factorio Circuit Tutorial</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="header">
+        <a href="https://ouroboros.pizza"><img src="https://ouroboros.pizza/logo.jpg" style="width:60px;height:60px;"></a>
+        <h1>Factorio Circuit Tutorial</h1>
+        <p>Learn how to build and use circuit networks in Factorio</p>
+    </div>
+
+    <div class="game-container">
+        <div class="tutorial-panel">
+            <h2 id="level-title">Level 1: Basic Connections</h2>
+            <p id="level-instructions">
+                Connect the constant combinator to the lamp using red wire. 
+                The lamp should light up when receiving a signal.
+            </p>
+            <div class="tutorial-controls">
+                <div class="level-selector-row">
+                    <label for="level-select">Jump to Level:</label>
+                    <select id="level-select">
+                        <option value="1">1: Basic Connection</option>
+                        <option value="2">2: Arithmetic Operations</option>
+                        <option value="3">3: Decision Making</option>
+                        <option value="4">4: Multiple Networks</option>
+                        <option value="5">5: Complex Logic</option>
+                    </select>
+                </div>
+                <button id="prev-level" disabled>Previous</button>
+                <button id="reset-level">Reset</button>
+                <button id="hint-btn">Show Hint</button>
+            </div>
+            <div id="hint-panel" class="hint-panel hidden">
+                <p id="hint-text"></p>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <canvas id="game-canvas" width="800" height="600"></canvas>
+        </div>
+
+        <div class="components-panel">
+            <h3>Available Components</h3>
+            <div class="component-grid">
+                <div class="component-item" data-component="constant-combinator">
+                    <div class="component-header">
+                        <div class="component-icon constant-combinator"></div>
+                        <span>Constant Combinator</span>
+                        <button class="info-toggle" data-target="constant-info">ℹ️</button>
+                    </div>
+                    <div class="component-description hidden" id="constant-info">
+                        <p>Outputs constant signal values. Configure it to send specific signals with set values to the circuit network. Essential for providing input values to your circuits.</p>
+                    </div>
+                </div>
+                <div class="component-item" data-component="arithmetic-combinator">
+                    <div class="component-header">
+                        <div class="component-icon arithmetic-combinator"></div>
+                        <span>Arithmetic Combinator</span>
+                        <button class="info-toggle" data-target="arithmetic-info">ℹ️</button>
+                    </div>
+                    <div class="component-description hidden" id="arithmetic-info">
+                        <p>Performs mathematical operations on signals. Can add, subtract, multiply, or divide signals. Takes two inputs and outputs the result.</p>
+                    </div>
+                </div>
+                <div class="component-item" data-component="decider-combinator">
+                    <div class="component-header">
+                        <div class="component-icon decider-combinator"></div>
+                        <span>Decider Combinator</span>
+                        <button class="info-toggle" data-target="decider-info">ℹ️</button>
+                    </div>
+                    <div class="component-description hidden" id="decider-info">
+                        <p>Makes decisions based on signal conditions. Compares a signal value with a condition (>, <, =, etc.) and outputs a signal only when the condition is met.</p>
+                    </div>
+                </div>
+                <div class="component-item" data-component="lamp">
+                    <div class="component-header">
+                        <div class="component-icon lamp"></div>
+                        <span>Lamp</span>
+                        <button class="info-toggle" data-target="lamp-info">ℹ️</button>
+                    </div>
+                    <div class="component-description hidden" id="lamp-info">
+                        <p>Visual indicator that lights up when receiving any signal. Useful for debugging circuits and showing when conditions are met.</p>
+                    </div>
+                </div>
+                <div class="component-item" data-component="red-wire">
+                    <div class="component-header">
+                        <div class="component-icon red-wire"></div>
+                        <span>Red Wire</span>
+                        <button class="info-toggle" data-target="red-wire-info">ℹ️</button>
+                    </div>
+                    <div class="component-description hidden" id="red-wire-info">
+                        <p>Connects components to form a circuit network. Red wire signals are separate from green wire signals, allowing for multiple independent networks.</p>
+                    </div>
+                </div>
+                <div class="component-item" data-component="green-wire">
+                    <div class="component-header">
+                        <div class="component-icon green-wire"></div>
+                        <span>Green Wire</span>
+                        <button class="info-toggle" data-target="green-wire-info">ℹ️</button>
+                    </div>
+                    <div class="component-description hidden" id="green-wire-info">
+                        <p>Connects components to form a circuit network. Green wire signals are separate from red wire signals, enabling complex multi-network designs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-panel">
+        <div class="signal-display">
+            <h4>Network Signals</h4>
+            <div id="signals-list"></div>
+        </div>
+        <div class="level-progress">
+            <span>Level: <span id="current-level">1</span> / <span id="total-levels">5</span></span>
+            <div class="progress-bar">
+                <div id="progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Modal -->
+    <div id="config-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Configure Component</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Arithmetic Combinator Config -->
+                <div id="arithmetic-config" class="config-panel hidden">
+                    <div class="config-row">
+                        <label>Input 1:</label>
+                        <select id="arith-input1">
+                            <option value="iron">Iron</option>
+                            <option value="copper">Copper</option>
+                            <option value="coal">Coal</option>
+                            <option value="wood">Wood</option>
+                        </select>
+                    </div>
+                    <div class="config-row">
+                        <label>Operation:</label>
+                        <select id="arith-operation">
+                            <option value="add">+</option>
+                            <option value="subtract">-</option>
+                            <option value="multiply">*</option>
+                            <option value="divide">/</option>
+                        </select>
+                    </div>
+                    <div class="config-row">
+                        <label>Input 2:</label>
+                        <input type="text" id="arith-input2" placeholder="Signal or number" value="1">
+                    </div>
+                    <div class="config-row">
+                        <label>Output:</label>
+                        <select id="arith-output">
+                            <option value="iron">Iron</option>
+                            <option value="copper">Copper</option>
+                            <option value="coal">Coal</option>
+                            <option value="wood">Wood</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Decider Combinator Config -->
+                <div id="decider-config" class="config-panel hidden">
+                    <div class="config-row">
+                        <label>Condition:</label>
+                        <select id="decider-condition">
+                            <option value="iron">Iron</option>
+                            <option value="copper">Copper</option>
+                            <option value="coal">Coal</option>
+                            <option value="wood">Wood</option>
+                        </select>
+                    </div>
+                    <div class="config-row">
+                        <label>Operator:</label>
+                        <select id="decider-operator">
+                            <option value=">">&gt;</option>
+                            <option value="<">&lt;</option>
+                            <option value=">=">&gt;=</option>
+                            <option value="<=">&lt;=</option>
+                            <option value="=">=</option>
+                        </select>
+                    </div>
+                    <div class="config-row">
+                        <label>Value:</label>
+                        <input type="text" id="decider-value" placeholder="Number or signal" value="0">
+                    </div>
+                    <div class="config-row">
+                        <label>Output Signal:</label>
+                        <select id="decider-output-signal">
+                            <option value="iron">Iron</option>
+                            <option value="copper">Copper</option>
+                            <option value="coal">Coal</option>
+                            <option value="wood">Wood</option>
+                            <option value="signal">Signal</option>
+                        </select>
+                    </div>
+                    <div class="config-row">
+                        <label>Output Value:</label>
+                        <input type="text" id="decider-output-value" placeholder="Number or 'input'" value="1">
+                    </div>
+                </div>
+                
+                <!-- Constant Combinator Config -->
+                <div id="constant-config" class="config-panel hidden">
+                    <div class="config-row">
+                        <label>Iron:</label>
+                        <input type="number" id="constant-iron" value="1">
+                    </div>
+                    <div class="config-row">
+                        <label>Copper:</label>
+                        <input type="number" id="constant-copper" value="0">
+                    </div>
+                    <div class="config-row">
+                        <label>Coal:</label>
+                        <input type="number" id="constant-coal" value="0">
+                    </div>
+                    <div class="config-row">
+                        <label>Wood:</label>
+                        <input type="number" id="constant-wood" value="0">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="config-save">Save</button>
+                <button id="config-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
