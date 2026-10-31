@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>One-Rotor Enigma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a single instrument column — rotor window, lampboard, keyboard — with the signal trace and wiring table beneath. */
+:root {
+  --bg: #e9ebe6;
+  --panel: #f7f8f4;
+  --ink: #1d221f;
+  --muted: #5d6660;
+  --line: #c9cdc4;
+  --key: #2a302c;
+  --key-ink: #eef0ea;
+  --lamp: #d8dbd3;
+  --lamp-on: #f3b33d;
+  --lamp-on-ink: #2a1c00;
+  --accent: #3f6b55;
+  --font-display: "Saira Stencil One", "Arial Black", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151816; --panel: #1e2320; --ink: #e4e7e1; --muted: #9aa49d; --line: #343b36;
+    --key: #0c0e0d; --key-ink: #e4e7e1; --lamp: #2a302c; --lamp-on: #f5b941; --lamp-on-ink: #2a1c00;
+    --accent: #7fb397; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151816; --panel: #1e2320; --ink: #e4e7e1; --muted: #9aa49d; --line: #343b36;
+  --key: #0c0e0d; --key-ink: #e4e7e1; --lamp: #2a302c; --lamp-on: #f5b941; --lamp-on-ink: #2a1c00;
+  --accent: #7fb397; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1 { font-family: var(--font-display); font-weight: 400; font-size: 2rem; margin: 0; letter-spacing: 0.02em; text-wrap: balance; }
+.lede { margin: 4px 0 0; color: var(--muted); max-width: 60ch; }
+h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+
+/* Machine */
+.machine { display: flex; flex-direction: column; gap: 18px; }
+.top { display: flex; gap: 16px; align-items: stretch; flex-wrap: wrap; }
+.rotor { display: flex; align-items: center; gap: 12px; }
+.window { width: 64px; border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; text-align: center; font-family: var(--font-mono); background: var(--bg); }
+.window div { line-height: 1.6; color: var(--muted); font-size: 0.9rem; }
+.window .cur { font-size: 1.6rem; font-weight: 600; color: var(--ink); border-block: 1px solid var(--line); line-height: 1.5; background: var(--panel); }
+.thumb { display: flex; flex-direction: column; gap: 6px; }
+.btn { font: inherit; font-size: 0.85rem; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 6px; padding: 6px 10px; cursor: pointer; min-height: 34px; }
+.btn:hover { border-color: var(--muted); }
+.btn:focus-visible, .k:focus-visible, .sw input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rotor-label { font-size: 0.8rem; color: var(--muted); }
+.rotor-label b { display: block; color: var(--ink); font-weight: 600; font-size: 0.95rem; }
+.switches { display: flex; flex-direction: column; gap: 8px; margin-left: auto; justify-content: center; }
+.sw { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; }
+.sw input { position: absolute; opacity: 0; }
+.sw span { width: 36px; height: 20px; border-radius: 10px; background: var(--line); position: relative; flex: none; transition: background .15s; }
+.sw span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--panel); transition: transform .15s; }
+.sw input:checked + span { background: var(--accent); }
+.sw input:checked + span::after { transform: translateX(16px); }
+
+.board { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.row { display: flex; gap: 5px; justify-content: center; }
+.lamp, .k { width: min(34px, 9.4vw); height: min(34px, 9.4vw); border-radius: 50%; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; font-size: 0.9rem; }
+.lamp { background: var(--lamp); color: var(--muted); transition: background .1s, box-shadow .1s; }
+.lamp.on { background: var(--lamp-on); color: var(--lamp-on-ink); box-shadow: 0 0 14px var(--lamp-on); }
+.k { border: none; background: var(--key); color: var(--key-ink); cursor: pointer; box-shadow: 0 3px 0 var(--line); touch-action: manipulation; }
+.k:active, .k.down { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.divider { height: 1px; background: var(--line); width: 100%; }
+
+/* Tape */
+.tape { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-family: var(--font-mono); font-size: 1rem; }
+.tape dt { color: var(--muted); font-family: var(--font-body); font-size: 0.8rem; align-self: center; }
+.tape dd { margin: 0; min-width: 0; overflow-wrap: anywhere; letter-spacing: 0.08em; min-height: 1.5em; }
+.tape-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* Trace */
+.trace { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 0.85rem; }
+.stage { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.stage .l { font-family: var(--font-mono); font-weight: 600; font-size: 1.15rem; border: 1px solid var(--line); border-radius: 6px; padding: 2px 10px; background: var(--bg); }
+.stage.end .l { background: var(--lamp-on); color: var(--lamp-on-ink); border-color: transparent; }
+.stage small { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.arrow { color: var(--muted); padding-bottom: 16px; }
+.hint { color: var(--muted); font-size: 0.85rem; margin: 10px 0 0; }
+
+/* Wiring table */
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; font-family: var(--font-mono); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+th, td { width: 22px; text-align: center; padding: 3px 0; }
+th { color: var(--muted); font-weight: 400; }
+td { border-top: 1px solid var(--line); }
+.hl { background: var(--lamp-on); color: var(--lamp-on-ink); font-weight: 600; }
+.self { color: var(--accent); font-weight: 600; text-decoration: underline; }
+
+ul.try { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; max-width: 62ch; }
+ul.try b { font-family: var(--font-mono); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>One-Rotor Enigma</h1>
+    <p class="lede">A single Rotor I with the UKW-B reflector. Press keys to encipher. Each keypress advances the rotor before the current flows, so the substitution changes every letter.</p>
+  </header>
+
+  <section class="machine" aria-label="Machine">
+    <div class="top">
+      <div class="rotor">
+        <div class="window" aria-live="polite">
+          <div id="wPrev">Z</div>
+          <div class="cur" id="wCur">A</div>
+          <div id="wNext">B</div>
+        </div>
+        <div class="thumb">
+          <button class="btn" id="up" aria-label="Rotor position forward">▲</button>
+          <button class="btn" id="down" aria-label="Rotor position back">▼</button>
+        </div>
+        <div class="rotor-label"><b>Rotor I</b>position <span id="posNum">1</span> of 26</div>
+      </div>
+      <div class="switches">
+        <label class="sw"><input type="checkbox" id="optStep" checked><span></span>Rotor steps</label>
+        <label class="sw"><input type="checkbox" id="optRefl" checked><span></span>Reflector</label>
+      </div>
+    </div>
+    <div class="board" id="lamps" aria-label="Lampboard"></div>
+    <div class="divider"></div>
+    <div class="board" id="keys" aria-label="Keyboard"></div>
+  </section>
+
+  <section>
+    <h2>Tape</h2>
+    <dl class="tape">
+      <dt>Input</dt><dd id="tIn"></dd>
+      <dt>Output</dt><dd id="tOut"></dd>
+    </dl>
+    <div class="tape-actions">
+      <button class="btn" id="reset">Reset rotor to A</button>
+      <button class="btn" id="clear">Clear tape</button>
+      <button class="btn" id="copy">Copy output</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Signal path, last key</h2>
+    <div class="trace" id="trace"></div>
+    <p class="hint" id="traceHint"></p>
+  </section>
+
+  <section>
+    <h2>Full substitution at position <span id="tblPos">A</span></h2>
+    <div class="tablewrap"><table id="tbl"></table></div>
+    <p class="hint" id="tblHint"></p>
+  </section>
+
+  <section>
+    <h2>Experiments</h2>
+    <ul class="try">
+      <li>Type <b>AAAAAA</b>. The same input letter produces a different output each time because the rotor moves.</li>
+      <li>Reset to A, type a word, then reset again and type the output. The original word comes back. The reflector makes the machine its own inverse.</li>
+      <li>Repeat that with the reflector off. Decryption fails, because the current passes through the rotor only once and that mapping is not symmetric.</li>
+      <li>With the reflector on, check the table: no letter ever maps to itself. Codebreakers at Bletchley Park exploited this flaw.</li>
+      <li>Turn stepping off. The machine becomes a fixed substitution cipher, breakable by letter-frequency analysis.</li>
+      <li>Type 26 letters with stepping on. The cycle repeats after 26 keys. The real machine used three rotors to stretch this to 16,900.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const idx = s => s.split("").map(c => A.indexOf(c));
+const W = idx("EKMFLGDQVZNTOWYHXUSPAIBRCJ");   // Rotor I
+const Winv = []; W.forEach((v, i) => (Winv[v] = i));
+const REF = idx("YRUHQSLDPXNGOKMIEBFZCWVJAT"); // UKW-B
+const m = n => ((n % 26) + 26) % 26;
+
+const fwd = (x, p) => m(W[m(x + p)] - p);
+const back = (x, p) => m(Winv[m(x + p)] - p);
+
+function encipher(x, p, refl) {
+  const s = [{ label: "Key", v: x }];
+  const a = fwd(x, p); s.push({ label: "Rotor in", v: a });
+  if (!refl) return { out: a, stages: s };
+  const b = REF[a]; s.push({ label: "Reflector", v: b });
+  const c = back(b, p); s.push({ label: "Rotor out", v: c });
+  return { out: c, stages: s };
+}
+
+const state = { pos: 0, step: true, refl: true, inp: "", out: "", last: null };
+const $ = id => document.getElementById(id);
+const ROWS = ["QWERTZUIO", "ASDFGHJK", "PYXCVBNML"];
+
+function buildBoard(el, cls, isKey) {
+  ROWS.forEach(r => {
+    const row = document.createElement("div"); row.className = "row";
+    r.split("").forEach(ch => {
+      const n = document.createElement(isKey ? "button" : "div");
+      n.className = cls; n.textContent = ch; n.dataset.ch = ch;
+      if (isKey) { n.type = "button"; n.addEventListener("click", () => press(ch)); }
+      row.appendChild(n);
+    });
+    el.appendChild(row);
+  });
+}
+buildBoard($("lamps"), "lamp", false);
+buildBoard($("keys"), "k", true);
+
+function press(ch) {
+  const x = A.indexOf(ch); if (x < 0) return;
+  if (state.step) state.pos = m(state.pos + 1);
+  const r = encipher(x, state.pos, state.refl);
+  state.last = { x, ...r, pos: state.pos };
+  state.inp += ch; state.out += A[r.out];
+  render();
+  const k = document.querySelector(`.k[data-ch="${ch}"]`);
+  if (k) { k.classList.add("down"); setTimeout(() => k.classList.remove("down"), 120); }
+}
+
+function group(s) { return s.replace(/(.{5})/g, "$1 ").trim(); }
+
+function render() {
+  const p = state.pos;
+  $("wPrev").textContent = A[m(p - 1)];
+  $("wCur").textContent = A[p];
+  $("wNext").textContent = A[m(p + 1)];
+  $("posNum").textContent = p + 1;
+  $("tIn").textContent = group(state.inp);
+  $("tOut").textContent = group(state.out);
+
+  document.querySelectorAll(".lamp").forEach(l => l.classList.toggle("on", !!state.last && l.dataset.ch === A[state.last.out]));
+
+  const tr = $("trace"); tr.innerHTML = "";
+  if (!state.last) {
+    $("traceHint").textContent = "Press a key to see the current flow through the machine.";
+  } else {
+    const st = state.last.stages.concat([{ label: "Lamp", v: state.last.out, end: true }]);
+    st.forEach((s, i) => {
+      if (i) { const a = document.createElement("span"); a.className = "arrow"; a.textContent = "→"; tr.appendChild(a); }
+      const d = document.createElement("div"); d.className = "stage" + (s.end ? " end" : "");
+      d.innerHTML = `<span class="l">${A[s.v]}</span><small>${s.label}</small>`;
+      tr.appendChild(d);
+    });
+    $("traceHint").textContent = state.step
+      ? `The rotor stepped to ${A[state.last.pos]} before this letter was enciphered.`
+      : `Stepping is off, so the rotor stayed at ${A[state.last.pos]}.`;
+  }
+
+  // Table shows the position the last key used, or the current one before any key.
+  const tp = state.last ? state.last.pos : p;
+  $("tblPos").textContent = A[tp];
+  let top = "<tr><th scope=\"row\">in</th>", bot = "<tr><th scope=\"row\">out</th>", selfCount = 0;
+  for (let i = 0; i < 26; i++) {
+    const o = encipher(i, tp, state.refl).out;
+    const hl = state.last && state.last.x === i && state.last.pos === tp ? " class=\"hl\"" : "";
+    const self = o === i; if (self) selfCount++;
+    top += `<th${hl}>${A[i]}</th>`;
+    bot += `<td${hl}${self && !hl ? " class=\"self\"" : ""}>${A[o]}</td>`;
+  }
+  $("tbl").innerHTML = top + "</tr>" + bot + "</tr>";
+  $("tblHint").textContent = state.refl
+    ? "With the reflector, every pair swaps both ways (if K gives T, T gives K) and no letter maps to itself."
+    : `Without the reflector, the mapping is one-way. ${selfCount} letter${selfCount === 1 ? "" : "s"} map to ${selfCount === 1 ? "itself" : "themselves"} at this position (underlined).`;
+}
+
+$("up").onclick = () => { state.pos = m(state.pos + 1); state.last = null; render(); };
+$("down").onclick = () => { state.pos = m(state.pos - 1); state.last = null; render(); };
+$("reset").onclick = () => { state.pos = 0; state.last = null; render(); };
+$("clear").onclick = () => { state.inp = ""; state.out = ""; state.last = null; render(); };
+$("optStep").onchange = e => { state.step = e.target.checked; render(); };
+$("optRefl").onchange = e => { state.refl = e.target.checked; state.last = null; render(); };
+$("copy").onclick = async e => {
+  const btn = e.target;
+  try { await navigator.clipboard.writeText(state.out); btn.textContent = "Copied"; }
+  catch { const r = document.createRange(); r.selectNodeContents($("tOut")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Selected"; }
+  setTimeout(() => (btn.textContent = "Copy output"), 1200);
+};
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const ch = e.key.toUpperCase();
+  if (ch.length === 1 && A.includes(ch)) { e.preventDefault(); press(ch); }
+});
+
+// Example starting state: "HELLO" typed from position A.
+"HELLO".split("").forEach(press);
+render();
+</script>
+</body>
+</html>
