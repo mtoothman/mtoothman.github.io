@@ -1,4 +1,4 @@
-// Clue data for Map Carbon Dating.
+// Clue data for Anno Mundi.
 //
 // Each row: [name, kind, ranges, where, note, aliases]
 //   kind    c = country, r = region (province, state, colony, territory), t = city, f = map feature
