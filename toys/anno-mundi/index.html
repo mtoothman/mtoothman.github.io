@@ -65,6 +65,26 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .btn{border:1px solid var(--line);background:var(--paper);padding:6px 12px;font-size:13px;font-weight:600}
 .btn:hover{border-color:var(--accent)}
 .cols{display:grid;gap:22px}
+body[data-mode="date"] [data-only="quiz"],body[data-mode="quiz"] [data-only="date"]{display:none!important}
+.head-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px}
+.modes{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--paper)}
+.modes a{padding:7px 14px;font:600 13px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-decoration:none}
+.modes a+a{border-left:1px solid var(--line)}
+.modes a[aria-current="page"]{background:var(--accent);color:var(--paper)}
+.modes a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.h-acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.copied{font-size:13px;color:var(--land);min-height:0}
+.copied:empty{display:none}
+.share-url{width:100%;font:12px var(--mono);padding:8px;border:1px solid var(--line);border-radius:3px;background:var(--sea);color:var(--ink)}
+.q-label{font:600 13px var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.q-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:default}
+.q-stats{font:12px var(--mono);color:var(--muted)}
+.verdict{font-weight:600;font-family:var(--body)}
+.verdict.ok{color:var(--land)}.verdict.no{color:var(--void)}
+.pill.right{outline:2px solid var(--land);outline-offset:1px}
 @media (min-width:860px){.cols{grid-template-columns:1fr 1fr;align-items:start}.cols:has(#next-wrap[hidden]){grid-template-columns:1fr}}
 .list{display:grid;border-top:1px solid var(--line)}
 .row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"thumb name acts" "thumb meta meta";gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:center}
@@ -79,15 +99,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .stamp{display:none;border:3px double var(--land);color:var(--land);border-radius:4px;padding:5px 12px 6px;transform:rotate(-7deg);text-align:center;line-height:1.1;text-transform:uppercase}
 .stamp span{display:block;font:600 13px var(--display);letter-spacing:.24em}
 .stamp b{display:block;font:500 22px var(--mono);letter-spacing:.04em}
-#result.solved{border-color:var(--land);box-shadow:inset 0 0 0 1px var(--land)}
-.solved .yr{color:var(--land)}
+body[data-mode="date"] #result.solved{border-color:var(--land);box-shadow:inset 0 0 0 1px var(--land)}
+.solved #yr{color:var(--land)}
 .solved .stamp{display:inline-block}
-.pin{position:absolute;top:-7px;bottom:-7px;width:3px;margin-left:-1.5px;background:var(--ink);border-radius:2px}
+.pin{position:absolute;top:-7px;bottom:0;width:3px;margin-left:-1.5px;background:var(--ink);border-radius:2px}
 @keyframes stamp-in{0%{opacity:0;transform:rotate(-7deg) scale(1.9)}65%{opacity:1;transform:rotate(-7deg) scale(.94)}100%{opacity:1;transform:rotate(-7deg) scale(1)}}
 @keyframes year-in{0%{letter-spacing:.12em;opacity:.4}100%{letter-spacing:.01em;opacity:1}}
 @media (prefers-reduced-motion:no-preference){
   .stamp.in{animation:stamp-in .5s cubic-bezier(.2,.8,.3,1.15) both}
-  .solved .yr{animation:year-in .4s ease-out both}
+  .solved #yr{animation:year-in .4s ease-out both}
 }
 .name{font-weight:600;min-width:0;border:none;background:none;padding:0;text-align:left;cursor:pointer}
 .name:hover .nm{text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px}
@@ -112,15 +132,38 @@ input[type=search]{width:100%;font:inherit;font-size:16px;padding:11px 12px;bord
 @media (prefers-reduced-motion:no-preference){.seg{transition:left .25s,width .25s}}
 </style>
 </head>
-<body>
+<body data-mode="date">
 <div class="wrap">
   <header>
-    <h1>Anno Mundi</h1>
-    <p class="lede">Mark the countries, city names, and features you can see on a world map, and the ones that are missing. The range of years the map can depict narrows with each clue.</p>
+    <div class="head-row">
+      <h1>Anno Mundi</h1>
+      <nav class="modes" aria-label="Mode">
+        <a href="#" id="tab-date" data-mode-link="date">Date a map</a>
+        <a href="#quiz" id="tab-quiz" data-mode-link="quiz">Quiz</a>
+      </nav>
+    </div>
+    <p class="lede" data-only="date">Mark the countries, city names, and features you can see on a world map, and the ones that are missing. The range of years the map can depict narrows with each clue.</p>
+    <p class="lede" data-only="quiz">You get a year and a list of names. Mark each one as it would appear on an up-to-date world map of that year, then check your answers.</p>
   </header>
 
   <section class="plate result" id="result" aria-label="Result">
-    <div class="readout" aria-live="polite">
+    <div class="readout" data-only="quiz" aria-live="polite">
+      <div>
+        <div class="q-label">Map of</div>
+        <div class="yr" id="q-year"></div>
+        <div class="sub" id="q-sub"></div>
+      </div>
+      <div>
+        <div class="track" id="q-track"></div>
+        <div class="ticks" id="q-ticks"></div>
+      </div>
+      <div class="q-actions">
+        <button class="btn primary" id="q-check">Check answers</button>
+        <button class="btn" id="q-new">New year</button>
+      </div>
+      <div class="q-stats" id="q-stats"></div>
+    </div>
+    <div class="readout" data-only="date" aria-live="polite">
       <div>
         <div class="yr-row">
           <div class="yr" id="yr"></div>
@@ -150,9 +193,16 @@ input[type=search]{width:100%;font:inherit;font-size:16px;padding:11px 12px;bord
     </div>
   </section>
 
-  <div class="cols">
+  <section class="plate" data-only="quiz">
+    <h2><span>Names to mark</span></h2>
+    <div class="list" id="q-list"></div>
+  </section>
+
+  <div class="cols" data-only="date">
     <section class="plate">
-      <h2><span>Clues</span><button class="btn" id="clear-all" hidden>Clear all</button></h2>
+      <h2><span>Clues</span><span class="h-acts"><button class="btn" id="copy-link" hidden>Copy link</button><button class="btn" id="clear-all" hidden>Clear all</button></span></h2>
+      <div class="copied" id="copy-status" role="status"></div>
+      <input class="share-url" id="share-url" readonly hidden aria-label="Link to these clues">
       <div class="list" id="clues"></div>
     </section>
 
@@ -163,7 +213,7 @@ input[type=search]{width:100%;font:inherit;font-size:16px;padding:11px 12px;bord
     </section>
   </div>
 
-  <section class="plate">
+  <section class="plate" data-only="date">
     <h2><span>Add a clue</span></h2>
     <input type="search" id="q" placeholder="Country, city, region, or feature: Zaire, Leningrad, Panama Canal" autocomplete="off">
     <div class="cats" id="cats"></div>
@@ -406,9 +456,10 @@ const Globe=(()=>{
     set onTheme(fn){onTheme=fn},
     update(clues){
       status={};points=[];
+      // Each item is {n, on}; with none: true it is drawn in the neutral accent color (an unanswered quiz name).
       for(const c of clues){const d=BY[c.n];
-        if(d.pt){points.push({xyz:toXYZ(d.pt[0],d.pt[1]),on:c.on,off:!c.on});continue}
-        for(const code of d.codes){const s=status[code]||(status[code]={on:false,off:false});s[c.on?"on":"off"]=true}}
+        if(d.pt){points.push({xyz:toXYZ(d.pt[0],d.pt[1]),on:!c.none&&c.on,off:!c.none&&!c.on});continue}
+        for(const code of d.codes){const s=status[code]||(status[code]={on:false,off:false});if(!c.none)s[c.on?"on":"off"]=true}}
       // A point clue may share coordinates with another clue: merge their states.
       const merged={};for(const p of points){const k=p.xyz.join();if(merged[k]){merged[k].on||=p.on;merged[k].off||=p.off}else merged[k]=p}
       points=Object.values(merged);
@@ -420,12 +471,31 @@ const Globe=(()=>{
 })();
 
 // ---- State and rendering -------------------------------------------------------
-let clues=[], isExample=false, cat="all";
+let clues=[], isExample=false, cat="all", mode="date";
 let stored=null;
 try{stored=localStorage.getItem("myf-state")}catch(e){}
 try{const s=JSON.parse(stored||"null");if(s&&Array.isArray(s.clues)){clues=s.clues.filter(c=>BY[c.n]);isExample=!!s.ex}}catch(e){}
 if(!stored){clues=[{n:"Soviet Union",on:true},{n:"Bangladesh",on:true}];isExample=true}
 function save(){try{localStorage.setItem("myf-state",JSON.stringify({clues,ex:isExample}))}catch(e){}}
+
+// ---- Shareable links: #c=+soviet-union,-bangladesh ------------------------------
+const slug=n=>norm(n).replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const BY_SLUG=Object.fromEntries(DATA.map(d=>[slug(d.n),d]));
+function cluesFromHash(h){
+  if(!h.startsWith("#c="))return null;
+  const out=[];
+  for(const part of decodeURIComponent(h.slice(3)).split(",")){
+    const d=BY_SLUG[part.slice(1)];
+    if(d&&(part[0]==="+"||part[0]==="-")&&!out.some(c=>c.n===d.n))out.push({n:d.n,on:part[0]==="+"});
+  }
+  return out;
+}
+const hashFor=list=>list.length?"#c="+list.map(c=>(c.on?"+":"-")+slug(c.n)).join(","):"";
+function syncHash(){
+  if(mode!=="date")return;
+  const h=isExample?"":hashFor(clues);
+  if(location.hash!==h){try{history.replaceState(null,"",location.pathname+location.search+h)}catch(e){}}
+}
 
 const $=id=>document.getElementById(id);
 $("ticks").innerHTML=[1850,1900,1950,2000,P].map(y=>`<span style="left:${(y-MIN)/(N-1)*100}%">${y}</span>`).join("");
@@ -446,7 +516,7 @@ function fillThumbs(){
     thumbQueued=false;
   });
 }
-Globe.onTheme=()=>render();
+Globe.onTheme=()=>mode==="quiz"?renderQuiz():render();
 function actions(d,current){
   return `<div class="acts">
     <button class="pill ${current===true?"on":"ghost"}" data-set="${esc(d.n)}" data-on="1">On map</button>
@@ -495,7 +565,9 @@ function render(){
   }
   $("next-wrap").hidden=!sug.length;
   $("next").innerHTML=sug.map(({d,k})=>`<div class="row">${nameBtn(d,"none")}${actions(d)}<div class="meta"><span>Present in ${k} of ${total} remaining years</span></div></div>`).join("");
-  renderResults();Globe.update(clues);save();
+  $("copy-link").hidden=!clues.length||isExample;
+  if($("copy-link").hidden){$("share-url").hidden=true;$("copy-status").textContent=""}
+  renderResults();if(mode==="date")Globe.update(clues);save();syncHash();
 }
 function renderResults(){
   const q=norm($("q").value.trim());
@@ -513,9 +585,88 @@ function setClue(n,on){
   if(i>=0){if(clues[i].on===on)clues.splice(i,1);else clues[i].on=on}else clues.push({n,on});
   render();
 }
+// ---- Quiz -------------------------------------------------------------------------
+const Q={year:0,items:[],checked:false};
+const qStats={rounds:0,right:0,total:0,perfect:0};
+try{Object.assign(qStats,JSON.parse(localStorage.getItem("anno-quiz")||"{}"))}catch(e){}
+// true = on an up-to-date map that year, false = not on it, null = boundary year (either answer fits).
+const truth=(d,y)=>{const on=mask(d,true)[y-MIN],off=mask(d,false)[y-MIN];return on&&!off?true:off&&!on?false:null};
+// Only ask about names whose status changes within 35 years of the quiz year, so every question is a real test.
+function changesNear(d,y){
+  const m=mask(d,true),i=y-MIN,lo=Math.max(0,i-35),hi=Math.min(N-1,i+35);
+  for(let k=lo;k<hi;k++)if(m[k]!==m[k+1])return true;
+  return false;
+}
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function newQuiz(){
+  for(let tries=0;tries<100;tries++){
+    const y=MIN+5+Math.floor(Math.random()*(P-MIN-4));
+    const pool=shuffle(DATA.filter(d=>truth(d,y)!==null&&changesNear(d,y)));
+    const yes=pool.filter(d=>truth(d,y)), no=pool.filter(d=>!truth(d,y));
+    const nYes=3+Math.floor(Math.random()*3);
+    if(yes.length<nYes||no.length<8-nYes)continue;
+    Q.year=y;Q.checked=false;
+    Q.items=shuffle([...yes.slice(0,nYes),...no.slice(0,8-nYes)]).map(d=>({n:d.n,ans:truth(d,y),pick:null}));
+    renderQuiz();return;
+  }
+}
+function renderQuiz(){
+  const answered=Q.items.filter(it=>it.pick!==null).length, right=Q.items.filter(it=>it.pick===it.ans).length;
+  $("q-year").textContent=Q.year;
+  $("q-sub").textContent=Q.checked?`${right} of ${Q.items.length} correct.`:`${answered} of ${Q.items.length} marked.`;
+  $("q-track").innerHTML=`<div class="pin" style="left:${(Q.year-MIN+0.5)/N*100}%"></div>`;
+  $("q-check").hidden=Q.checked;$("q-check").disabled=answered<Q.items.length;
+  $("q-new").className=Q.checked?"btn primary":"btn";
+  $("q-stats").textContent=qStats.rounds?`${qStats.rounds} round${qStats.rounds>1?"s":""} played · ${qStats.right} of ${qStats.total} correct · ${qStats.perfect} perfect`:"";
+  $("q-list").innerHTML=Q.items.map((it,i)=>{const d=BY[it.n];
+    const pill=(on,label)=>{const chosen=it.pick===on;
+      const cls=chosen?(on?"on":"off"):"ghost";
+      return `<button class="pill ${cls}${Q.checked&&it.ans===on?" right":""}" data-qpick="${i}" data-on="${on?1:0}"${Q.checked?" disabled":""} aria-pressed="${chosen}">${label}</button>`};
+    const meta=Q.checked?`<span><span class="verdict ${it.pick===it.ans?"ok":"no"}">${it.pick===it.ans?"Correct":"Wrong"}</span> · ${it.ans?"On":"Not on"} the map in ${Q.year} · exists ${runs(mask(d,true)).map(fr).join(", ")}${d.note?" · "+esc(d.note):""}</span>`
+      :`<span>${K[d.k]}${d.aka.length?" · also "+esc(d.aka.join(", ")):""}</span>`;
+    return `<div class="row">${nameBtn(d,Q.checked?(it.ans?"on":"off"):"none")}<div class="acts">${pill(true,"On map")}${pill(false,"Not on map")}</div><div class="meta">${meta}</div></div>`}).join("");
+  Globe.update(Q.items.map(it=>({n:it.n,on:it.ans,none:!Q.checked})));
+  fillThumbs();
+}
+function checkQuiz(){
+  if(Q.checked)return;Q.checked=true;
+  const right=Q.items.filter(it=>it.pick===it.ans).length;
+  qStats.rounds++;qStats.right+=right;qStats.total+=Q.items.length;if(right===Q.items.length)qStats.perfect++;
+  try{localStorage.setItem("anno-quiz",JSON.stringify(qStats))}catch(e){}
+  renderQuiz();
+}
+
+// ---- Modes ------------------------------------------------------------------------
+function applyRoute(){
+  mode=location.hash==="#quiz"?"quiz":"date";
+  document.body.dataset.mode=mode;
+  for(const a of document.querySelectorAll("[data-mode-link]")){
+    if(a.dataset.modeLink===mode)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");
+  }
+  if(mode==="quiz"){if(!Q.items.length)newQuiz();else renderQuiz()}
+  else{const hc=cluesFromHash(location.hash);if(hc){clues=hc;isExample=false}render()}
+}
+window.addEventListener("hashchange",applyRoute);
+$("tab-date").addEventListener("click",e=>{
+  // Return to the dating view with the current clues in the address.
+  e.preventDefault();
+  if(mode!=="date"){try{history.pushState(null,"",location.pathname+location.search+(isExample?"":hashFor(clues)))}catch(er){}applyRoute()}
+});
+
+async function copyLink(){
+  const url=location.href.split("#")[0]+hashFor(clues);
+  const status=$("copy-status"),box=$("share-url");
+  try{await navigator.clipboard.writeText(url);status.textContent="Link copied.";box.hidden=true}
+  catch(e){box.value=url;box.hidden=false;box.focus();box.select();status.textContent="Copy the link below."}
+}
+
 document.addEventListener("click",e=>{
   const t=e.target.closest("button");if(!t)return;
-  if(t.dataset.set)setClue(t.dataset.set,t.dataset.on==="1");
+  if(t.dataset.qpick){const it=Q.items[+t.dataset.qpick],on=t.dataset.on==="1";it.pick=it.pick===on?null:on;renderQuiz()}
+  else if(t.id==="q-check")checkQuiz();
+  else if(t.id==="q-new")newQuiz();
+  else if(t.id==="copy-link")copyLink();
+  else if(t.dataset.set)setClue(t.dataset.set,t.dataset.on==="1");
   else if(t.dataset.focus)Globe.focus(BY[t.dataset.focus]);
   else if(t.dataset.toggle){clues[+t.dataset.toggle].on=!clues[+t.dataset.toggle].on;isExample=false;render()}
   else if(t.dataset.del){clues.splice(+t.dataset.del,1);isExample=false;render()}
@@ -523,7 +674,8 @@ document.addEventListener("click",e=>{
   else if(t.id==="clear-ex"||t.id==="clear-all"){clues=[];isExample=false;render()}
 });
 $("q").addEventListener("input",renderResults);
-render();
+$("q-ticks").innerHTML=$("ticks").innerHTML;
+applyRoute();
 Globe.start();
 </script>
 </body>
