@@ -65,9 +65,30 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .btn{border:1px solid var(--line);background:var(--paper);padding:6px 12px;font-size:13px;font-weight:600}
 .btn:hover{border-color:var(--accent)}
 .cols{display:grid;gap:22px}
-@media (min-width:860px){.cols{grid-template-columns:1fr 1fr;align-items:start}}
+@media (min-width:860px){.cols{grid-template-columns:1fr 1fr;align-items:start}.cols:has(#next-wrap[hidden]){grid-template-columns:1fr}}
 .list{display:grid;border-top:1px solid var(--line)}
-.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:center}
+.row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"thumb name acts" "thumb meta meta";gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:center}
+.row .name{grid-area:name}.row .acts{grid-area:acts}.row .meta{grid-area:meta}
+.thumb{grid-area:thumb;align-self:start;width:44px;height:44px;padding:0;border:none;background:none;border-radius:50%}
+.thumb img{width:44px;height:44px;display:block;border-radius:50%;background:var(--ocean)}
+@media (max-width:520px){
+  .row{grid-template-columns:44px minmax(0,1fr);grid-template-areas:"thumb name" "thumb acts" "thumb meta"}
+  .row .acts{justify-content:flex-start}
+}
+.yr-row{display:flex;align-items:center;flex-wrap:wrap;gap:12px 22px}
+.stamp{display:none;border:3px double var(--land);color:var(--land);border-radius:4px;padding:5px 12px 6px;transform:rotate(-7deg);text-align:center;line-height:1.1;text-transform:uppercase}
+.stamp span{display:block;font:600 13px var(--display);letter-spacing:.24em}
+.stamp b{display:block;font:500 22px var(--mono);letter-spacing:.04em}
+#result.solved{border-color:var(--land);box-shadow:inset 0 0 0 1px var(--land)}
+.solved .yr{color:var(--land)}
+.solved .stamp{display:inline-block}
+.pin{position:absolute;top:-7px;bottom:-7px;width:3px;margin-left:-1.5px;background:var(--ink);border-radius:2px}
+@keyframes stamp-in{0%{opacity:0;transform:rotate(-7deg) scale(1.9)}65%{opacity:1;transform:rotate(-7deg) scale(.94)}100%{opacity:1;transform:rotate(-7deg) scale(1)}}
+@keyframes year-in{0%{letter-spacing:.12em;opacity:.4}100%{letter-spacing:.01em;opacity:1}}
+@media (prefers-reduced-motion:no-preference){
+  .stamp.in{animation:stamp-in .5s cubic-bezier(.2,.8,.3,1.15) both}
+  .solved .yr{animation:year-in .4s ease-out both}
+}
 .name{font-weight:600;min-width:0;border:none;background:none;padding:0;text-align:left;cursor:pointer}
 .name:hover .nm{text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px}
 .kind{font:500 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-left:6px}
@@ -98,10 +119,13 @@ input[type=search]{width:100%;font:inherit;font-size:16px;padding:11px 12px;bord
     <p class="lede">Mark the countries, city names, and features you can see on a world map, and the ones that are missing. The range of years the map can depict narrows with each clue.</p>
   </header>
 
-  <section class="plate result" aria-label="Result">
+  <section class="plate result" id="result" aria-label="Result">
     <div class="readout" aria-live="polite">
       <div>
-        <div class="yr" id="yr"></div>
+        <div class="yr-row">
+          <div class="yr" id="yr"></div>
+          <div class="stamp" id="stamp" aria-hidden="true"><span>Dated</span><b id="stamp-year"></b></div>
+        </div>
         <div class="sub" id="sub"></div>
       </div>
       <div>
@@ -183,7 +207,8 @@ const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&qu
 
 // ---- Globe ---------------------------------------------------------------------
 const Globe=(()=>{
-  const cv=document.getElementById("globe"), ctx=cv.getContext("2d");
+  const cv=document.getElementById("globe"), mainCtx=cv.getContext("2d");
+  let ctx=mainCtx;
   const RAD=Math.PI/180;
   const toXYZ=(lon,lat)=>{const a=lon*RAD,b=lat*RAD,c=Math.cos(b);return [c*Math.cos(a),c*Math.sin(a),Math.sin(b)]};
   // Decode outlines into unit vectors, densified so long edges curve with the sphere.
@@ -207,8 +232,10 @@ const Globe=(()=>{
       out.push({v,c:[cx,cy,cz],cull:minDot>=0?-Math.sqrt(1-minDot*minDot):-2});
       const w=v.length/3;sx+=cx*w;sy+=cy*w;sz+=cz*w;
     }
-    const L=Math.hypot(sx,sy,sz)||1;
-    shapes[code]={rings:out,center:[sx/L,sy/L,sz/L]};
+    const L=Math.hypot(sx,sy,sz)||1,c=[sx/L,sy/L,sz/L];
+    // Angular radius of the whole shape, used to mark countries too small to see on a thumbnail.
+    let md=1;for(const r of out)for(let i=0;i<r.v.length;i+=3)md=Math.min(md,r.v[i]*c[0]+r.v[i+1]*c[1]+r.v[i+2]*c[2]);
+    shapes[code]={rings:out,center:c,radius:Math.acos(Math.max(-1,Math.min(1,md)))/RAD};
   }
   // Graticule every 30 degrees.
   const grat=[];
@@ -219,6 +246,7 @@ const Globe=(()=>{
   let cl,sl,cp,sp;
   let status={}, points=[], sel=null, colors=null, mixed=null;
   let spinning=!matchMedia("(prefers-reduced-motion: reduce)").matches, anim=null, raf=0;
+  let stride=1, thumbMode=false;
 
   function readColors(){
     const s=getComputedStyle(document.documentElement),g=k=>s.getPropertyValue(k).trim();
@@ -226,7 +254,7 @@ const Globe=(()=>{
     const p=document.createElement("canvas");p.width=p.height=8;const q=p.getContext("2d");
     q.fillStyle=colors.void;q.fillRect(0,0,8,8);q.strokeStyle=colors.land;q.lineWidth=3;
     q.beginPath();for(let k=-8;k<=16;k+=8){q.moveTo(k,8);q.lineTo(k+8,0)}q.stroke();
-    mixed=ctx.createPattern(p,"repeat");
+    mixed=mainCtx.createPattern(p,"repeat");
   }
   function setView(){const a=lam*RAD,b=phi*RAD;cl=Math.cos(a);sl=Math.sin(a);cp=Math.cos(b);sp=Math.sin(b)}
   // Rotate a unit vector so (lam, phi) faces the viewer. Returns [screenX, screenY, depth] with x, y in [-1, 1].
@@ -234,8 +262,8 @@ const Globe=(()=>{
   const ang=(x,y)=>Math.atan2(y,x);
 
   function ringFill(v){
-    let pd=0,px=0,py=0,pz=0,pa=0;
-    for(let i=0;i<v.length;i+=3){
+    let pd=0,px=0,py=0,pa=0;
+    for(let i=0;i<v.length;i+=3*stride){
       const X=v[i]*cl+v[i+1]*sl,Y=-v[i]*sl+v[i+1]*cl,Z=v[i+2];
       const x=Y,y=-(-X*sp+Z*cp),d=X*cp+Z*sp;
       if(i===0){
@@ -249,17 +277,18 @@ const Globe=(()=>{
         if(d>=0)ctx.lineTo(cx+x*R,cy+y*R);
         else{const a=ang(x,y);arcTo(pa,a);pa=a}
       }
-      pd=d;px=x;py=y;pz=d;
+      pd=d;px=x;py=y;
     }
     ctx.closePath();
   }
   function arcTo(a0,a1){let dl=a1-a0;while(dl>Math.PI)dl-=2*Math.PI;while(dl<-Math.PI)dl+=2*Math.PI;ctx.arc(cx,cy,R,a0,a0+dl,dl<0)}
   function lineFront(v,closed){
     let pd=-1,px=0,py=0,started=false;
-    const n=v.length;
-    for(let i=0;i<=n;i+=3){
-      if(i===n&&!closed)break;
-      const j=i%n,X=v[j]*cl+v[j+1]*sl,Y=-v[j]*sl+v[j+1]*cl,Z=v[j+2];
+    const n=v.length,step=3*stride;
+    for(let i=0;;i+=step){
+      let j=i;
+      if(i>=n){if(!closed||i>=n+step)break;j=0}
+      const X=v[j]*cl+v[j+1]*sl,Y=-v[j]*sl+v[j+1]*cl,Z=v[j+2];
       const x=Y,y=-(-X*sp+Z*cp),d=X*cp+Z*sp;
       if(d>=0){
         if(!started||pd<0){
@@ -275,29 +304,33 @@ const Globe=(()=>{
     ctx.beginPath();
     for(const code of codes){const s=shapes[code];if(!s)continue;for(const r of s.rings)if(visible(r))fill?ringFill(r.v):lineFront(r.v,true)}
   }
+  // Fill color for a status entry: on map, not on map, both, or neutral (a thumbnail of a clue not yet answered).
+  const fillFor=s=>s.on&&s.off?mixed:s.on?colors.land:s.off?colors.void:colors.accent;
   function draw(){
     if(!W)return;
     if(!colors)readColors();
+    paint(status,points,sel);
+  }
+  function paint(status,points,sel){
     setView();
     ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.clearRect(0,0,W,W);
     ctx.beginPath();ctx.arc(cx,cy,R,0,2*Math.PI);ctx.fillStyle=colors.ocean;ctx.fill();
-    ctx.lineWidth=0.6;ctx.strokeStyle=colors.grat;ctx.beginPath();
-    for(const g of grat)lineFront(g,false);ctx.stroke();
+    if(!thumbMode){ctx.lineWidth=0.6;ctx.strokeStyle=colors.grat;ctx.beginPath();
+      for(const g of grat)lineFront(g,false);ctx.stroke()}
     const all=Object.keys(shapes);
     pathCodes(all,true);ctx.fillStyle=colors.ground;ctx.fill("evenodd");
-    const groups={on:[],off:[],mix:[]};
-    for(const [code,s] of Object.entries(status))groups[s.on&&s.off?"mix":s.on?"on":"off"].push(code);
-    if(groups.on.length){pathCodes(groups.on,true);ctx.fillStyle=colors.land;ctx.fill("evenodd")}
-    if(groups.off.length){pathCodes(groups.off,true);ctx.fillStyle=colors.void;ctx.fill("evenodd")}
-    if(groups.mix.length){pathCodes(groups.mix,true);ctx.fillStyle=mixed;ctx.fill("evenodd")}
-    pathCodes(all,false);ctx.lineWidth=0.5;ctx.strokeStyle=colors.border;ctx.stroke();
+    const groups={on:[],off:[],mix:[],acc:[]};
+    for(const [code,s] of Object.entries(status))groups[s.on&&s.off?"mix":s.on?"on":s.off?"off":"acc"].push(code);
+    for(const [g,fs] of [["on",colors.land],["off",colors.void],["mix",mixed],["acc",colors.accent]])
+      if(groups[g].length){pathCodes(groups[g],true);ctx.fillStyle=fs;ctx.fill("evenodd")}
+    pathCodes(all,false);ctx.lineWidth=thumbMode?0.3:0.5;ctx.strokeStyle=colors.border;ctx.stroke();
     if(sel&&sel.codes.length){pathCodes(sel.codes,false);ctx.lineWidth=2;ctx.strokeStyle=colors.accent;ctx.stroke()}
     for(const p of points){
       const [x,y,d]=rot(...p.xyz);if(d<0)continue;
-      ctx.beginPath();ctx.arc(cx+x*R,cy+y*R,4.5,0,2*Math.PI);
-      ctx.fillStyle=p.on&&p.off?mixed:p.on?colors.land:colors.void;ctx.fill();
-      ctx.lineWidth=1.5;ctx.strokeStyle=colors.paper;ctx.stroke();
+      ctx.beginPath();ctx.arc(cx+x*R,cy+y*R,thumbMode?3.2:4.5,0,2*Math.PI);
+      ctx.fillStyle=fillFor(p);ctx.fill();
+      ctx.lineWidth=thumbMode?1:1.5;ctx.strokeStyle=colors.paper;ctx.stroke();
     }
     if(sel&&sel.pt){const [x,y,d]=rot(...toXYZ(sel.pt[0],sel.pt[1]));
       if(d>=0){ctx.beginPath();ctx.arc(cx+x*R,cy+y*R,9,0,2*Math.PI);ctx.lineWidth=2;ctx.strokeStyle=colors.accent;ctx.stroke()}}
@@ -316,7 +349,8 @@ const Globe=(()=>{
     cv.width=Math.round(w*dpr);cv.height=Math.round(w*dpr);cx=cy=w/2;R=w/2-2;draw();
   }
   new ResizeObserver(resize).observe(cv);
-  const retheme=()=>{colors=null;draw()};
+  let onTheme=null;
+  const retheme=()=>{colors=null;thumbCache.clear();draw();if(onTheme)onTheme()};
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change",retheme);
   new MutationObserver(retheme).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme","class","style"]});
 
@@ -341,7 +375,35 @@ const Globe=(()=>{
     if(!x&&!y&&!z)return null;
     const L=Math.hypot(x,y,z);return [Math.atan2(y,x)/RAD,Math.asin(z/L)/RAD];
   }
+  // Thumbnails: the same renderer, drawn small, centered on one clue, cached as image URLs.
+  const thumbCache=new Map(), TS=44;
+  const tcv=document.createElement("canvas"), tctx=tcv.getContext("2d");
+  function thumb(d,state){
+    const key=d.id+state;
+    if(thumbCache.has(key))return thumbCache.get(key);
+    if(!colors)readColors();
+    const c=centerOf(d)||[0,0];
+    const saved={ctx,W,R,cx,cy,dpr,lam,phi,stride,thumbMode};
+    const tdpr=2;tcv.width=tcv.height=TS*tdpr;
+    ctx=tctx;W=TS;dpr=tdpr;cx=cy=TS/2;R=TS/2-1;lam=c[0];phi=Math.max(-70,Math.min(70,c[1]));stride=3;thumbMode=true;
+    const s={on:state==="on",off:state==="off"};
+    const st={},pts=[];
+    if(d.pt)pts.push({xyz:toXYZ(d.pt[0],d.pt[1]),...s});
+    else{
+      for(const code of d.codes)st[code]=s;
+      // Mark areas too small to see at this size with a dot at their center.
+      if(d.codes.every(code=>!shapes[code]||shapes[code].radius<5))
+        pts.push({xyz:toXYZ(c[0],c[1]),...s});
+    }
+    try{paint(st,pts,null)}
+    finally{({ctx,W,R,cx,cy,dpr,lam,phi,stride,thumbMode}=saved)}
+    const url=tcv.toDataURL("image/png");
+    thumbCache.set(key,url);
+    return url;
+  }
   return {
+    thumb,
+    set onTheme(fn){onTheme=fn},
     update(clues){
       status={};points=[];
       for(const c of clues){const d=BY[c.n];
@@ -370,7 +432,21 @@ $("ticks").innerHTML=[1850,1900,1950,2000,P].map(y=>`<span style="left:${(y-MIN)
 $("cats").innerHTML=[["all","All"],["c","Countries"],["r","Regions"],["t","Cities"],["f","Features"]].map(([k,l])=>`<button data-cat="${k}" aria-pressed="${k===cat}">${l}</button>`).join("");
 
 const segs=m=>runs(m).map(([s,e])=>`<i style="left:${(s-MIN)/N*100}%;width:${(e-s+1)/N*100}%"></i>`).join("");
-const nameBtn=d=>`<button class="name" data-focus="${esc(d.n)}" title="Show on globe"><span class="nm">${esc(d.n)}</span><span class="kind">${K[d.k]}</span></button>`;
+const nameBtn=(d,state)=>`<button class="thumb" data-focus="${esc(d.n)}" tabindex="-1" aria-hidden="true"><img alt="" width="44" height="44" data-thumb="${esc(d.n)}" data-state="${state}"></button><button class="name" data-focus="${esc(d.n)}" title="Show on globe"><span class="nm">${esc(d.n)}</span><span class="kind">${K[d.k]}</span></button>`;
+// Draw thumbnails a few per frame so typing in search stays responsive.
+let thumbQueued=false;
+function fillThumbs(){
+  if(thumbQueued)return;thumbQueued=true;
+  requestAnimationFrame(function step(){
+    const t0=performance.now();
+    for(const img of document.querySelectorAll("img[data-thumb]:not([src])")){
+      img.src=Globe.thumb(BY[img.dataset.thumb],img.dataset.state);
+      if(performance.now()-t0>12){requestAnimationFrame(step);return}
+    }
+    thumbQueued=false;
+  });
+}
+Globe.onTheme=()=>render();
 function actions(d,current){
   return `<div class="acts">
     <button class="pill ${current===true?"on":"ghost"}" data-set="${esc(d.n)}" data-on="1">On map</button>
@@ -378,13 +454,23 @@ function actions(d,current){
 }
 function render(){
   const m=combine(clues), total=count(m), r=runs(m);
-  const yr=$("yr");
+  const yr=$("yr"), solved=total===1&&r[0][0]!==MIN;
   if(!total){yr.textContent="No year fits";yr.className="yr bad"}
   else{yr.className="yr";yr.textContent=r.length>3?r.slice(0,3).map(fr).join(", ")+" …":r.map(fr).join(", ")}
   $("sub").textContent=!clues.length?"Add clues to narrow down the year the map depicts."
+    :solved?`Narrowed to a single year by ${clues.length} clue${clues.length>1?"s":""}.`
     :total?`${total} possible year${total>1?"s":""} from ${clues.length} clue${clues.length>1?"s":""}`
     :"These clues contradict each other.";
-  $("track").innerHTML=r.map(([s,e])=>`<div class="seg" style="left:${(s-MIN)/N*100}%;width:${(e-s+1)/N*100}%"></div>`).join("");
+  $("track").innerHTML=r.map(([s,e])=>`<div class="seg" style="left:${(s-MIN)/N*100}%;width:${(e-s+1)/N*100}%"></div>`).join("")
+    +(solved?`<div class="pin" style="left:${(r[0][0]-MIN+0.5)/N*100}%"></div>`:"");
+  const plate=$("result");
+  if(solved&&!plate.classList.contains("solved")){
+    $("stamp-year").textContent=r[0][0];
+    plate.classList.add("solved");
+    // Replay the stamp animation each time the range narrows to one year.
+    const st=$("stamp");st.classList.remove("in");void st.offsetWidth;st.classList.add("in");
+  }else if(solved)$("stamp-year").textContent=r[0][0];
+  else plate.classList.remove("solved");
   $("example").hidden=!isExample;
   $("clear-all").hidden=!clues.length||isExample;
 
@@ -396,7 +482,7 @@ function render(){
   }else cf.hidden=true;
 
   $("clues").innerHTML=clues.length?clues.map((c,i)=>{const d=BY[c.n],cm=mask(d,c.on);return `<div class="row">
-    ${nameBtn(d)}
+    ${nameBtn(d,c.on?"on":"off")}
     <div class="acts"><button class="pill ${c.on?"on":"off"}" data-toggle="${i}" aria-label="Toggle ${esc(d.n)}">${c.on?"On map":"Not on map"}</button><button class="x" data-del="${i}" aria-label="Remove ${esc(d.n)}">×</button></div>
     <div class="meta"><span>Fits ${runs(cm).map(fr).join(", ")}${d.note?" · "+esc(d.note):""}</span><div class="mini">${segs(cm)}</div></div></div>`}).join("")
     :`<div class="empty">No clues yet. Search below for a country, city, or feature you can see on the map, or one that should be there but is not.</div>`;
@@ -408,7 +494,7 @@ function render(){
     sug.sort((a,b)=>b.sc-a.sc||"crtf".indexOf(a.d.k)-"crtf".indexOf(b.d.k)).splice(6);
   }
   $("next-wrap").hidden=!sug.length;
-  $("next").innerHTML=sug.map(({d,k})=>`<div class="row">${nameBtn(d)}${actions(d)}<div class="meta"><span>Present in ${k} of ${total} remaining years</span></div></div>`).join("");
+  $("next").innerHTML=sug.map(({d,k})=>`<div class="row">${nameBtn(d,"none")}${actions(d)}<div class="meta"><span>Present in ${k} of ${total} remaining years</span></div></div>`).join("");
   renderResults();Globe.update(clues);save();
 }
 function renderResults(){
@@ -417,8 +503,9 @@ function renderResults(){
   let list=DATA.filter(d=>(cat==="all"||d.k===cat)&&(!q||norm(d.n).includes(q)||d.aka.some(a=>norm(a).includes(q))));
   if(q)list.sort((a,b)=>norm(b.n).startsWith(q)-norm(a.n).startsWith(q));
   const shown=list.slice(0,q?12:8);
-  $("results").innerHTML=shown.length?shown.map(d=>`<div class="row">${nameBtn(d)}${actions(d,cur[d.n])}<div class="meta"><span>Exists ${runs(mask(d,true)).map(fr).join(", ")}${d.aka.length?" · also "+esc(d.aka.join(", ")):""}</span></div></div>`).join("")+(list.length>shown.length?`<div class="empty">${list.length-shown.length} more. Type to narrow the list.</div>`:"")
+  $("results").innerHTML=shown.length?shown.map(d=>`<div class="row">${nameBtn(d,cur[d.n]===true?"on":cur[d.n]===false?"off":"none")}${actions(d,cur[d.n])}<div class="meta"><span>Exists ${runs(mask(d,true)).map(fr).join(", ")}${d.aka.length?" · also "+esc(d.aka.join(", ")):""}</span></div></div>`).join("")+(list.length>shown.length?`<div class="empty">${list.length-shown.length} more. Type to narrow the list.</div>`:"")
     :`<div class="empty">Nothing matches “${esc($("q").value)}”. Try another spelling or an older name.</div>`;
+  fillThumbs();
 }
 function setClue(n,on){
   if(isExample){clues=[];isExample=false}
