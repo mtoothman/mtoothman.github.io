@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map Year Finder</title>
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --fg: #1d1d1b;
+    --muted: #6b6a66;
+    --line: #dddbd4;
+    --card: #ffffff;
+    --accent: #2f6f5e;
+    --accent-soft: #dcece6;
+    --warn: #9a5b12;
+    --warn-soft: #f7ead6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161615;
+      --fg: #eceae4;
+      --muted: #9e9c95;
+      --line: #34332f;
+      --card: #1f1f1d;
+      --accent: #7cc3ad;
+      --accent-soft: #1f3a32;
+      --warn: #e2b06a;
+      --warn-soft: #3a2c18;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  header img { width: 44px; height: 44px; border-radius: 4px; }
+  h1 { font-size: 1.6rem; margin: 0; }
+  .intro { color: var(--muted); margin: 0 0 20px; }
+
+  .result {
+    position: sticky; top: 0; z-index: 2;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  .result .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .result .years { font-size: 1.7rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .result .note { font-size: 0.9rem; color: var(--muted); }
+  .result .conflict { margin-top: 6px; font-size: 0.9rem; color: var(--warn); background: var(--warn-soft); padding: 6px 10px; border-radius: 6px; }
+  .timeline { position: relative; height: 18px; margin-top: 10px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .timeline .band { position: absolute; top: 0; bottom: 0; background: var(--accent); }
+  .ticks { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
+
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .toolbar span { color: var(--muted); font-size: 0.9rem; }
+  button.reset {
+    font: inherit; font-size: 0.9rem;
+    background: none; border: 1px solid var(--line); color: var(--fg);
+    border-radius: 6px; padding: 4px 12px; cursor: pointer;
+  }
+  button.reset:hover { border-color: var(--muted); }
+
+  .q { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .q h2 { font-size: 1rem; margin: 0 0 2px; }
+  .q .hint { font-size: 0.85rem; color: var(--muted); margin: 0 0 8px; }
+  .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .opts label {
+    display: inline-flex; align-items: center;
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 4px 12px; cursor: pointer; font-size: 0.92rem;
+    user-select: none;
+  }
+  .opts input { position: absolute; opacity: 0; pointer-events: none; }
+  .opts label:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); }
+  .opts label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .opts label .range { color: var(--muted); font-size: 0.8rem; margin-left: 6px; font-variant-numeric: tabular-nums; }
+  .q.out { border-color: var(--warn); }
+
+  footer { margin-top: 28px; font-size: 0.85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <a href="https://ouroboros.pizza/toys/index.html"><img src="https://ouroboros.pizza/logo.jpg" alt="Back to toys"></a>
+    <h1>Map Year Finder</h1>
+  </header>
+  <p class="intro">Dates a world map from 1945 onward by which countries and names appear on it. Answer the questions you can check on your map and skip the rest.</p>
+
+  <section class="result" aria-live="polite">
+    <div class="label">Estimated year</div>
+    <div class="years" id="years">1945 – present</div>
+    <div class="note" id="note">No answers yet.</div>
+    <div class="conflict" id="conflict" hidden></div>
+    <div class="timeline" id="timeline"></div>
+    <div class="ticks"><span>1945</span><span>1965</span><span>1985</span><span>2005</span><span id="tick-end"></span></div>
+  </section>
+
+  <div class="toolbar">
+    <span id="count"></span>
+    <button class="reset" id="reset" type="button">Reset</button>
+  </div>
+
+  <div id="questions"></div>
+
+  <footer>
+    Boundary years are inclusive because maps are often printed a year or two after a change, and some publishers keep older names for longer.
+  </footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var START = 1945;
+  var NOW = new Date().getFullYear();
+
+  // Each option lists the year intervals it is consistent with. null as the end year means "to the present".
+  var QUESTIONS = [
+    { id: "ussr", title: "Soviet Union", hint: "Look at the area covering Russia, Ukraine, and Kazakhstan.",
+      options: [
+        { label: "One country: USSR / Soviet Union", ranges: [[1945, 1991]] },
+        { label: "Russia, Ukraine, Kazakhstan etc. are separate", ranges: [[1991, null]] }
+      ] },
+    { id: "germany", title: "Germany", hint: "",
+      options: [
+        { label: "East and West Germany", ranges: [[1949, 1990]] },
+        { label: "One Germany", ranges: [[1945, 1949], [1990, null]] }
+      ] },
+    { id: "yugoslavia", title: "Yugoslavia", hint: "The Balkans between Italy and Greece.",
+      options: [
+        { label: "Yugoslavia, including Slovenia, Croatia and Bosnia", ranges: [[1945, 1992]] },
+        { label: "Yugoslavia, only Serbia and Montenegro", ranges: [[1992, 2003]] },
+        { label: "“Serbia and Montenegro” as one country", ranges: [[2003, 2006]] },
+        { label: "Serbia and Montenegro are separate", ranges: [[2006, null]] }
+      ] },
+    { id: "kosovo", title: "Kosovo", hint: "Some maps still show Kosovo as part of Serbia, so only an independent Kosovo is a firm clue.",
+      options: [
+        { label: "Kosovo shown as its own country", ranges: [[2008, null]] }
+      ] },
+    { id: "czech", title: "Czechoslovakia", hint: "",
+      options: [
+        { label: "Czechoslovakia", ranges: [[1945, 1993]] },
+        { label: "Czech Republic (or Czechia) and Slovakia", ranges: [[1993, null]] }
+      ] },
+    { id: "macedonia", title: "Macedonia", hint: "North of Greece.",
+      options: [
+        { label: "Part of Yugoslavia", ranges: [[1945, 1991]] },
+        { label: "Macedonia / FYROM", ranges: [[1991, 2019]] },
+        { label: "North Macedonia", ranges: [[2019, null]] }
+      ] },
+    { id: "southsudan", title: "South Sudan", hint: "",
+      options: [
+        { label: "Sudan is one country", ranges: [[1945, 2011]] },
+        { label: "South Sudan is separate", ranges: [[2011, null]] }
+      ] },
+    { id: "eritrea", title: "Eritrea", hint: "On the Red Sea coast north of Ethiopia.",
+      options: [
+        { label: "Part of Ethiopia", ranges: [[1952, 1993]] },
+        { label: "Eritrea is its own country", ranges: [[1993, null]] }
+      ] },
+    { id: "congo", title: "Congo (Kinshasa)", hint: "The large country in central Africa.",
+      options: [
+        { label: "Belgian Congo", ranges: [[1945, 1960]] },
+        { label: "Zaire", ranges: [[1971, 1997]] },
+        { label: "Congo / Democratic Republic of the Congo", ranges: [[1960, 1971], [1997, null]] }
+      ] },
+    { id: "zimbabwe", title: "Zimbabwe", hint: "",
+      options: [
+        { label: "Southern Rhodesia / Federation of Rhodesia and Nyasaland", ranges: [[1945, 1964]] },
+        { label: "Rhodesia", ranges: [[1964, 1980]] },
+        { label: "Zimbabwe", ranges: [[1979, null]] }
+      ] },
+    { id: "namibia", title: "Namibia", hint: "",
+      options: [
+        { label: "South West Africa", ranges: [[1945, 1990]] },
+        { label: "Namibia", ranges: [[1990, null]] }
+      ] },
+    { id: "eswatini", title: "Eswatini", hint: "Small country between South Africa and Mozambique.",
+      options: [
+        { label: "Swaziland", ranges: [[1945, 2018]] },
+        { label: "Eswatini", ranges: [[2018, null]] }
+      ] },
+    { id: "ghana", title: "Ghana", hint: "",
+      options: [
+        { label: "Gold Coast", ranges: [[1945, 1957]] },
+        { label: "Ghana", ranges: [[1957, null]] }
+      ] },
+    { id: "tanzania", title: "Tanzania", hint: "",
+      options: [
+        { label: "Tanganyika and Zanzibar", ranges: [[1945, 1964]] },
+        { label: "Tanzania", ranges: [[1964, null]] }
+      ] },
+    { id: "burkina", title: "Burkina Faso", hint: "",
+      options: [
+        { label: "Upper Volta", ranges: [[1947, 1984]] },
+        { label: "Burkina Faso", ranges: [[1984, null]] }
+      ] },
+    { id: "benin", title: "Benin", hint: "",
+      options: [
+        { label: "Dahomey", ranges: [[1945, 1975]] },
+        { label: "Benin", ranges: [[1975, null]] }
+      ] },
+    { id: "yemen", title: "Yemen", hint: "",
+      options: [
+        { label: "Two states (North and South Yemen, or Yemen and Aden)", ranges: [[1945, 1990]] },
+        { label: "One Yemen", ranges: [[1990, null]] }
+      ] },
+    { id: "bangladesh", title: "Bangladesh", hint: "",
+      options: [
+        { label: "Part of British India", ranges: [[1945, 1947]] },
+        { label: "East Pakistan", ranges: [[1947, 1971]] },
+        { label: "Bangladesh", ranges: [[1971, null]] }
+      ] },
+    { id: "srilanka", title: "Sri Lanka", hint: "",
+      options: [
+        { label: "Ceylon", ranges: [[1945, 1972]] },
+        { label: "Sri Lanka", ranges: [[1972, null]] }
+      ] },
+    { id: "myanmar", title: "Myanmar", hint: "Many English-language maps kept “Burma” after 1989, so only “Myanmar” is a firm clue.",
+      options: [
+        { label: "Myanmar", ranges: [[1989, null]] }
+      ] },
+    { id: "vietnam", title: "Vietnam", hint: "",
+      options: [
+        { label: "French Indochina", ranges: [[1945, 1954]] },
+        { label: "North and South Vietnam", ranges: [[1954, 1976]] },
+        { label: "One Vietnam", ranges: [[1976, null]] }
+      ] },
+    { id: "timor", title: "East Timor", hint: "Eastern half of the island of Timor, north of Australia.",
+      options: [
+        { label: "Portuguese Timor", ranges: [[1945, 1975]] },
+        { label: "Part of Indonesia", ranges: [[1975, 2002]] },
+        { label: "East Timor / Timor-Leste", ranges: [[2002, null]] }
+      ] },
+    { id: "malaysia", title: "Malaysia", hint: "",
+      options: [
+        { label: "Malaya", ranges: [[1945, 1963]] },
+        { label: "Malaysia", ranges: [[1963, null]] }
+      ] },
+    { id: "belize", title: "Belize", hint: "Central America, east of Guatemala.",
+      options: [
+        { label: "British Honduras", ranges: [[1945, 1973]] },
+        { label: "Belize", ranges: [[1973, null]] }
+      ] }
+  ];
+
+  var answers = {};
+  var STORE_KEY = "map-year-finder-answers";
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (raw) answers = JSON.parse(raw) || {};
+    } catch (e) { answers = {}; }
+  }
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(answers)); } catch (e) { /* storage unavailable */ }
+  }
+
+  function contains(ranges, year) {
+    for (var i = 0; i < ranges.length; i++) {
+      var end = ranges[i][1] === null ? NOW : ranges[i][1];
+      if (year >= ranges[i][0] && year <= end) return true;
+    }
+    return false;
+  }
+
+  function render() {
+    var host = document.getElementById("questions");
+    host.innerHTML = "";
+    QUESTIONS.forEach(function (q) {
+      var box = document.createElement("div");
+      box.className = "q";
+      box.id = "q-" + q.id;
+
+      var h = document.createElement("h2");
+      h.textContent = q.title;
+      box.appendChild(h);
+      if (q.hint) {
+        var p = document.createElement("p");
+        p.className = "hint";
+        p.textContent = q.hint;
+        box.appendChild(p);
+      }
+
+      var opts = document.createElement("div");
+      opts.className = "opts";
+      opts.setAttribute("role", "radiogroup");
+      opts.setAttribute("aria-label", q.title);
+
+      var all = [{ label: "Not shown / not sure", ranges: null }].concat(q.options);
+      all.forEach(function (opt, idx) {
+        var value = idx - 1; // -1 means unanswered
+        var lab = document.createElement("label");
+        var input = document.createElement("input");
+        input.type = "radio";
+        input.name = q.id;
+        input.value = String(value);
+        input.checked = (answers[q.id] === undefined ? -1 : answers[q.id]) === value;
+        input.addEventListener("change", function () {
+          if (value === -1) delete answers[q.id]; else answers[q.id] = value;
+          save();
+          update();
+        });
+        lab.appendChild(input);
+        lab.appendChild(document.createTextNode(opt.label));
+        if (opt.ranges) {
+          var r = document.createElement("span");
+          r.className = "range";
+          r.textContent = opt.ranges.map(function (x) {
+            return x[0] + "–" + (x[1] === null ? "now" : x[1]);
+          }).join(", ");
+          lab.appendChild(r);
+        }
+        opts.appendChild(lab);
+      });
+      box.appendChild(opts);
+      host.appendChild(box);
+    });
+  }
+
+  function spans(years) {
+    // Collapse a sorted list of years into [start, end] runs.
+    var out = [];
+    years.forEach(function (y) {
+      var last = out[out.length - 1];
+      if (last && y === last[1] + 1) last[1] = y; else out.push([y, y]);
+    });
+    return out;
+  }
+
+  function fmt(run) {
+    var end = run[1] === NOW ? "present" : String(run[1]);
+    return run[0] === run[1] ? String(run[0]) : run[0] + " – " + end;
+  }
+
+  function update() {
+    var picked = QUESTIONS.filter(function (q) { return answers[q.id] !== undefined; });
+    var total = picked.length;
+
+    var best = -1, bestYears = [];
+    for (var y = START; y <= NOW; y++) {
+      var score = 0;
+      picked.forEach(function (q) {
+        if (contains(q.options[answers[q.id]].ranges, y)) score++;
+      });
+      if (score > best) { best = score; bestYears = [y]; }
+      else if (score === best) bestYears.push(y);
+    }
+
+    var runs = spans(bestYears);
+    document.getElementById("years").textContent = runs.map(fmt).join(", ");
+    document.getElementById("count").textContent = total + " of " + QUESTIONS.length + " answered";
+
+    var note = document.getElementById("note");
+    if (total === 0) {
+      note.textContent = "No answers yet.";
+    } else {
+      var n = bestYears.length;
+      note.textContent = "Based on " + total + " answer" + (total === 1 ? "" : "s") + " · " + n + " possible year" + (n === 1 ? "" : "s") + ".";
+    }
+
+    // Flag answers that disagree with the best-fit years.
+    var conflict = document.getElementById("conflict");
+    var outliers = [];
+    QUESTIONS.forEach(function (q) {
+      var box = document.getElementById("q-" + q.id);
+      var isOut = false;
+      if (answers[q.id] !== undefined) {
+        var r = q.options[answers[q.id]].ranges;
+        isOut = !bestYears.some(function (yy) { return contains(r, yy); });
+      }
+      box.classList.toggle("out", isOut);
+      if (isOut) outliers.push(q.title);
+    });
+    if (outliers.length) {
+      conflict.hidden = false;
+      conflict.textContent = "Your answers conflict. Showing the years that fit the most of them. Check: " + outliers.join(", ") + ".";
+    } else {
+      conflict.hidden = true;
+    }
+
+    var tl = document.getElementById("timeline");
+    tl.innerHTML = "";
+    var span = NOW - START + 1;
+    runs.forEach(function (run) {
+      var band = document.createElement("div");
+      band.className = "band";
+      band.style.left = ((run[0] - START) / span * 100) + "%";
+      band.style.width = ((run[1] - run[0] + 1) / span * 100) + "%";
+      tl.appendChild(band);
+    });
+  }
+
+  document.getElementById("reset").addEventListener("click", function () {
+    answers = {};
+    save();
+    render();
+    update();
+  });
+
+  document.getElementById("tick-end").textContent = String(NOW);
+  load();
+  render();
+  update();
+})();
+</script>
+</body>
+</html>
