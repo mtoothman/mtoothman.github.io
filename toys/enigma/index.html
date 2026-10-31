@@ -69,6 +69,10 @@ section { background: var(--panel); border: 1px solid var(--line); border-radius
 .sw span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--panel); transition: transform .15s; }
 .sw input:checked + span { background: var(--accent); }
 .sw input:checked + span::after { transform: translateX(16px); }
+.sw input:disabled + span, .sw:has(input:disabled) { opacity: 0.45; cursor: not-allowed; }
+.rotor.removed { opacity: 0.35; }
+.rotor.removed .window { border-style: dashed; }
+.strip { align-self: flex-start; }
 
 .board { display: flex; flex-direction: column; gap: 6px; align-items: center; }
 .row { display: flex; gap: 5px; justify-content: center; }
@@ -113,12 +117,12 @@ ul.try b { font-family: var(--font-mono); }
 <div class="wrap">
   <header>
     <h1>One-Rotor Enigma</h1>
-    <p class="lede">A single Rotor I with the UKW-B reflector. Press keys to encipher. Each keypress advances the rotor before the current flows, so the substitution changes every letter.</p>
+    <p class="lede">A single Rotor I with the UKW-B reflector. Press keys to encipher. Each keypress advances the rotor before the current flows, so the substitution changes every letter. Strip the machine to bare wiring and add each component in turn to see what it contributes.</p>
   </header>
 
   <section class="machine" aria-label="Machine">
     <div class="top">
-      <div class="rotor">
+      <div class="rotor" id="rotorBox">
         <div class="window" aria-live="polite">
           <div id="wPrev">Z</div>
           <div class="cur" id="wCur">A</div>
@@ -131,8 +135,10 @@ ul.try b { font-family: var(--font-mono); }
         <div class="rotor-label"><b>Rotor I</b>position <span id="posNum">1</span> of 26</div>
       </div>
       <div class="switches">
+        <label class="sw"><input type="checkbox" id="optRotor" checked><span></span>Rotor installed</label>
         <label class="sw"><input type="checkbox" id="optStep" checked><span></span>Rotor steps</label>
         <label class="sw"><input type="checkbox" id="optRefl" checked><span></span>Reflector</label>
+        <button class="btn strip" id="strip">Strip to bare wiring</button>
       </div>
     </div>
     <div class="board" id="lamps" aria-label="Lampboard"></div>
@@ -168,7 +174,10 @@ ul.try b { font-family: var(--font-mono); }
   <section>
     <h2>Experiments</h2>
     <ul class="try">
-      <li>Type <b>AAAAAA</b>. The same input letter produces a different output each time because the rotor moves.</li>
+      <li>Select <b>Strip to bare wiring</b>. Each key is wired straight to its own lamp, so the output equals the input.</li>
+      <li>Add only the reflector. It swaps 13 fixed letter pairs: a reciprocal substitution that never changes between keypresses.</li>
+      <li>Install the rotor with stepping off. The substitution is still fixed, but it is now a scrambled mapping instead of simple pairs.</li>
+      <li>Turn stepping on and type <b>AAAAAA</b>. The same input letter produces a different output each time because the rotor moves.</li>
       <li>Reset to A, type a word, then reset again and type the output. The original word comes back. The reflector makes the machine its own inverse.</li>
       <li>Repeat that with the reflector off. Decryption fails, because the current passes through the rotor only once and that mapping is not symmetric.</li>
       <li>With the reflector on, check the table: no letter ever maps to itself. Codebreakers at Bletchley Park exploited this flaw.</li>
@@ -189,16 +198,16 @@ const m = n => ((n % 26) + 26) % 26;
 const fwd = (x, p) => m(W[m(x + p)] - p);
 const back = (x, p) => m(Winv[m(x + p)] - p);
 
-function encipher(x, p, refl) {
+function encipher(x, p, refl, rotor = true) {
   const s = [{ label: "Key", v: x }];
-  const a = fwd(x, p); s.push({ label: "Rotor in", v: a });
-  if (!refl) return { out: a, stages: s };
-  const b = REF[a]; s.push({ label: "Reflector", v: b });
-  const c = back(b, p); s.push({ label: "Rotor out", v: c });
-  return { out: c, stages: s };
+  let v = x;
+  if (rotor) { v = fwd(v, p); s.push({ label: "Rotor in", v }); }
+  if (refl) { v = REF[v]; s.push({ label: "Reflector", v }); }
+  if (rotor && refl) { v = back(v, p); s.push({ label: "Rotor out", v }); }
+  return { out: v, stages: s };
 }
 
-const state = { pos: 0, step: true, refl: true, inp: "", out: "", last: null };
+const state = { pos: 0, rotor: true, step: true, refl: true, inp: "", out: "", last: null };
 const $ = id => document.getElementById(id);
 const ROWS = ["QWERTZUIO", "ASDFGHJK", "PYXCVBNML"];
 
@@ -219,8 +228,8 @@ buildBoard($("keys"), "k", true);
 
 function press(ch) {
   const x = A.indexOf(ch); if (x < 0) return;
-  if (state.step) state.pos = m(state.pos + 1);
-  const r = encipher(x, state.pos, state.refl);
+  if (state.rotor && state.step) state.pos = m(state.pos + 1);
+  const r = encipher(x, state.pos, state.refl, state.rotor);
   state.last = { x, ...r, pos: state.pos };
   state.inp += ch; state.out += A[r.out];
   render();
@@ -252,7 +261,9 @@ function render() {
       d.innerHTML = `<span class="l">${A[s.v]}</span><small>${s.label}</small>`;
       tr.appendChild(d);
     });
-    $("traceHint").textContent = state.step
+    $("traceHint").textContent = !state.rotor
+      ? (state.refl ? "No rotor is installed, so the current goes straight to the reflector and back." : "No components are installed, so the key is wired directly to its lamp.")
+      : state.step
       ? `The rotor stepped to ${A[state.last.pos]} before this letter was enciphered.`
       : `Stepping is off, so the rotor stayed at ${A[state.last.pos]}.`;
   }
@@ -262,14 +273,23 @@ function render() {
   $("tblPos").textContent = A[tp];
   let top = "<tr><th scope=\"row\">in</th>", bot = "<tr><th scope=\"row\">out</th>", selfCount = 0;
   for (let i = 0; i < 26; i++) {
-    const o = encipher(i, tp, state.refl).out;
+    const o = encipher(i, tp, state.refl, state.rotor).out;
     const hl = state.last && state.last.x === i && state.last.pos === tp ? " class=\"hl\"" : "";
     const self = o === i; if (self) selfCount++;
     top += `<th${hl}>${A[i]}</th>`;
     bot += `<td${hl}${self && !hl ? " class=\"self\"" : ""}>${A[o]}</td>`;
   }
   $("tbl").innerHTML = top + "</tr>" + bot + "</tr>";
-  $("tblHint").textContent = state.refl
+  $("rotorBox").classList.toggle("removed", !state.rotor);
+  $("optStep").disabled = !state.rotor;
+  ["up", "down"].forEach(id => ($(id).disabled = !state.rotor));
+  $("tblPos").parentElement.firstChild.textContent = state.rotor ? "Full substitution at position " : "Full substitution, no rotor ";
+  $("tblPos").hidden = !state.rotor;
+  $("tblHint").textContent = !state.rotor && !state.refl
+    ? "Bare wiring: every letter maps to itself (underlined). This is the identity mapping."
+    : !state.rotor
+    ? "The reflector alone swaps 13 fixed pairs. It is reciprocal and never maps a letter to itself, but it is the same for every keypress, so letter frequencies show through."
+    : state.refl
     ? "With the reflector, every pair swaps both ways (if K gives T, T gives K) and no letter maps to itself."
     : `Without the reflector, the mapping is one-way. ${selfCount} letter${selfCount === 1 ? "" : "s"} map to ${selfCount === 1 ? "itself" : "themselves"} at this position (underlined).`;
 }
@@ -280,6 +300,12 @@ $("reset").onclick = () => { state.pos = 0; state.last = null; render(); };
 $("clear").onclick = () => { state.inp = ""; state.out = ""; state.last = null; render(); };
 $("optStep").onchange = e => { state.step = e.target.checked; render(); };
 $("optRefl").onchange = e => { state.refl = e.target.checked; state.last = null; render(); };
+$("optRotor").onchange = e => { state.rotor = e.target.checked; state.last = null; render(); };
+$("strip").onclick = () => {
+  ["optRotor", "optStep", "optRefl"].forEach(id => ($(id).checked = false));
+  Object.assign(state, { rotor: false, step: false, refl: false, pos: 0, inp: "", out: "", last: null });
+  render();
+};
 $("copy").onclick = async e => {
   const btn = e.target;
   try { await navigator.clipboard.writeText(state.out); btn.textContent = "Copied"; }
