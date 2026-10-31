@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>One-Rotor Enigma</title>
+<title>Enigma Workbench</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: a single instrument column — rotor window, lampboard, keyboard — with the signal trace and wiring table beneath. */
+/* Layout: a stage stepper above one instrument panel that grows from a single circuit into a one-rotor Enigma; trace, table and plugboard sit beneath. */
 :root {
   --bg: #e9ebe6;
   --panel: #f7f8f4;
@@ -20,6 +20,7 @@
   --lamp-on: #f3b33d;
   --lamp-on-ink: #2a1c00;
   --accent: #3f6b55;
+  --accent-ink: #ffffff;
   --font-display: "Saira Stencil One", "Arial Black", sans-serif;
   --font-body: "IBM Plex Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
@@ -28,15 +29,16 @@
   :root:not([data-theme="light"]) {
     --bg: #151816; --panel: #1e2320; --ink: #e4e7e1; --muted: #9aa49d; --line: #343b36;
     --key: #0c0e0d; --key-ink: #e4e7e1; --lamp: #2a302c; --lamp-on: #f5b941; --lamp-on-ink: #2a1c00;
-    --accent: #7fb397; color-scheme: dark;
+    --accent: #7fb397; --accent-ink: #0f1a14; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #151816; --panel: #1e2320; --ink: #e4e7e1; --muted: #9aa49d; --line: #343b36;
   --key: #0c0e0d; --key-ink: #e4e7e1; --lamp: #2a302c; --lamp-on: #f5b941; --lamp-on-ink: #2a1c00;
-  --accent: #7fb397; color-scheme: dark;
+  --accent: #7fb397; --accent-ink: #0f1a14; color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -48,43 +50,84 @@ h1 { font-family: var(--font-display); font-weight: 400; font-size: 2rem; margin
 .lede { margin: 4px 0 0; color: var(--muted); max-width: 60ch; }
 h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
 section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.hint { color: var(--muted); font-size: 0.85rem; margin: 10px 0 0; }
+
+/* Stage stepper */
+.stepper { display: flex; flex-direction: column; gap: 12px; }
+.progress { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.progress button { height: 8px; border: none; border-radius: 4px; background: var(--line); cursor: pointer; padding: 0; }
+.progress button.done { background: var(--accent); opacity: 0.5; }
+.progress button.cur { background: var(--accent); }
+.stage-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.stage-num { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+.stage-title { font-size: 1.25rem; font-weight: 600; margin: 0; text-wrap: balance; text-transform: none; letter-spacing: 0; color: var(--ink); }
+.stage-body { margin: 0; max-width: 62ch; }
+.try { margin: 0; font-size: 0.9rem; padding-left: 10px; border-left: 3px solid var(--lamp-on); max-width: 62ch; }
+.try b { font-weight: 600; }
+.nav { display: flex; gap: 8px; }
+.nav .btn { flex: 1; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+
+.btn { font: inherit; font-size: 0.85rem; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 6px; padding: 6px 10px; cursor: pointer; min-height: 36px; }
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:focus-visible, .k:focus-visible, .sock:focus-visible, .progress button:focus-visible, .sw input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Machine */
 .machine { display: flex; flex-direction: column; gap: 18px; }
-.top { display: flex; gap: 16px; align-items: stretch; flex-wrap: wrap; }
+.top { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 .rotor { display: flex; align-items: center; gap: 12px; }
 .window { width: 64px; border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; text-align: center; font-family: var(--font-mono); background: var(--bg); }
 .window div { line-height: 1.6; color: var(--muted); font-size: 0.9rem; }
 .window .cur { font-size: 1.6rem; font-weight: 600; color: var(--ink); border-block: 1px solid var(--line); line-height: 1.5; background: var(--panel); }
 .thumb { display: flex; flex-direction: column; gap: 6px; }
-.btn { font: inherit; font-size: 0.85rem; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 6px; padding: 6px 10px; cursor: pointer; min-height: 34px; }
-.btn:hover { border-color: var(--muted); }
-.btn:focus-visible, .k:focus-visible, .sw input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
 .rotor-label { font-size: 0.8rem; color: var(--muted); }
 .rotor-label b { display: block; color: var(--ink); font-weight: 600; font-size: 0.95rem; }
-.switches { display: flex; flex-direction: column; gap: 8px; margin-left: auto; justify-content: center; }
+.switches { display: flex; flex-direction: column; gap: 8px; margin-left: auto; }
 .sw { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; }
 .sw input { position: absolute; opacity: 0; }
 .sw span { width: 36px; height: 20px; border-radius: 10px; background: var(--line); position: relative; flex: none; transition: background .15s; }
 .sw span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--panel); transition: transform .15s; }
 .sw input:checked + span { background: var(--accent); }
 .sw input:checked + span::after { transform: translateX(16px); }
-.sw input:disabled + span, .sw:has(input:disabled) { opacity: 0.45; cursor: not-allowed; }
-.rotor.removed { opacity: 0.35; }
-.rotor.removed .window { border-style: dashed; }
-.strip { align-self: flex-start; }
+.sw:has(input:disabled) { opacity: 0.45; cursor: not-allowed; }
 
 .board { display: flex; flex-direction: column; gap: 6px; align-items: center; }
 .row { display: flex; gap: 5px; justify-content: center; }
 .lamp, .k { width: min(34px, 9.4vw); height: min(34px, 9.4vw); border-radius: 50%; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; font-size: 0.9rem; }
 .lamp { background: var(--lamp); color: var(--muted); transition: background .1s, box-shadow .1s; }
 .lamp.on { background: var(--lamp-on); color: var(--lamp-on-ink); box-shadow: 0 0 14px var(--lamp-on); }
-.k { border: none; background: var(--key); color: var(--key-ink); cursor: pointer; box-shadow: 0 3px 0 var(--line); touch-action: manipulation; }
+.k { border: none; background: var(--key); color: var(--key-ink); cursor: pointer; box-shadow: 0 3px 0 var(--line); touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .k:active, .k.down { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.k.big { width: 52px; height: 52px; font-size: 1.1rem; }
 .divider { height: 1px; background: var(--line); width: 100%; }
 
+/* Circuit diagram */
+.circuit { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.circuit svg { width: 100%; max-width: 420px; height: auto; display: block; }
+.wire { fill: none; stroke: var(--line); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; transition: stroke .1s; }
+.wire.live { stroke: var(--lamp-on); }
+.lever { stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
+.node { fill: var(--ink); }
+.plate { stroke: var(--ink); stroke-linecap: round; }
+.bulb { fill: var(--lamp); stroke: var(--muted); stroke-width: 1.5; transition: fill .1s; }
+.bulb.on { fill: var(--lamp-on); stroke: var(--lamp-on); }
+.svgt { fill: var(--muted); font-family: var(--font-body); font-size: 11px; }
+.svgl { fill: var(--ink); font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+.svgl.on { fill: var(--lamp-on-ink); }
+
+/* Plugboard */
+.plugs { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 4px; }
+.sock { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 6px; padding: 4px 0 2px; cursor: pointer; font-family: var(--font-mono); display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.sock b { font-size: 0.9rem; }
+.sock small { font-size: 0.65rem; color: var(--muted); min-height: 1.2em; }
+.sock.paired { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.sock.paired small { color: var(--accent-ink); }
+.sock.pending { border-color: var(--lamp-on); box-shadow: 0 0 0 2px var(--lamp-on); }
+.plug-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+
 /* Tape */
-.tape { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-family: var(--font-mono); font-size: 1rem; }
+.tape { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-family: var(--font-mono); font-size: 1rem; margin: 0; }
 .tape dt { color: var(--muted); font-family: var(--font-body); font-size: 0.8rem; align-self: center; }
 .tape dd { margin: 0; min-width: 0; overflow-wrap: anywhere; letter-spacing: 0.08em; min-height: 1.5em; }
 .tape-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
@@ -96,9 +139,8 @@ section { background: var(--panel); border: 1px solid var(--line); border-radius
 .stage.end .l { background: var(--lamp-on); color: var(--lamp-on-ink); border-color: transparent; }
 .stage small { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .arrow { color: var(--muted); padding-bottom: 16px; }
-.hint { color: var(--muted); font-size: 0.85rem; margin: 10px 0 0; }
 
-/* Wiring table */
+/* Table */
 .tablewrap { overflow-x: auto; }
 table { border-collapse: collapse; font-family: var(--font-mono); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
 th, td { width: 22px; text-align: center; padding: 3px 0; }
@@ -107,46 +149,76 @@ td { border-top: 1px solid var(--line); }
 .hl { background: var(--lamp-on); color: var(--lamp-on-ink); font-weight: 600; }
 .self { color: var(--accent); font-weight: 600; text-decoration: underline; }
 
-ul.try { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; max-width: 62ch; }
-ul.try b { font-family: var(--font-mono); }
+ul.list { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; max-width: 62ch; }
+ul.list b { font-family: var(--font-mono); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
-
 <div class="wrap">
   <header>
-    <h1>One-Rotor Enigma</h1>
-    <p class="lede">A single Rotor I with the UKW-B reflector. Press keys to encipher. Each keypress advances the rotor before the current flows, so the substitution changes every letter. Strip the machine to bare wiring and add each component in turn to see what it contributes.</p>
+    <h1>Enigma Workbench</h1>
+    <p class="lede">Build a one-rotor Enigma one part at a time, starting from a single battery, key and lamp. Each stage adds one component and shows what it changes.</p>
   </header>
 
-  <section class="machine" aria-label="Machine">
-    <div class="top">
-      <div class="rotor" id="rotorBox">
-        <div class="window" aria-live="polite">
-          <div id="wPrev">Z</div>
-          <div class="cur" id="wCur">A</div>
-          <div id="wNext">B</div>
-        </div>
-        <div class="thumb">
-          <button class="btn" id="up" aria-label="Rotor position forward">▲</button>
-          <button class="btn" id="down" aria-label="Rotor position back">▼</button>
-        </div>
-        <div class="rotor-label"><b>Rotor I</b>position <span id="posNum">1</span> of 26</div>
-      </div>
-      <div class="switches">
-        <label class="sw"><input type="checkbox" id="optRotor" checked><span></span>Rotor installed</label>
-        <label class="sw"><input type="checkbox" id="optStep" checked><span></span>Rotor steps</label>
-        <label class="sw"><input type="checkbox" id="optRefl" checked><span></span>Reflector</label>
-        <button class="btn strip" id="strip">Strip to bare wiring</button>
-      </div>
+  <section class="stepper" aria-label="Build stages">
+    <div class="progress" id="progress"></div>
+    <div class="stage-head">
+      <span class="stage-num" id="stageNum"></span>
+      <h2 class="stage-title" id="stageTitle"></h2>
     </div>
-    <div class="board" id="lamps" aria-label="Lampboard"></div>
-    <div class="divider"></div>
-    <div class="board" id="keys" aria-label="Keyboard"></div>
+    <p class="stage-body" id="stageBody"></p>
+    <p class="try" id="stageTry"></p>
+    <div class="nav">
+      <button class="btn" id="prev">Back</button>
+      <button class="btn primary" id="next">Next</button>
+    </div>
   </section>
 
-  <section>
+  <section class="machine" aria-label="Machine">
+    <div class="circuit" id="circuitView">
+      <div id="circuitSvg"></div>
+      <label class="sw" id="crossRow"><input type="checkbox" id="optCross"><span></span>Cross the wires</label>
+      <div class="row" id="circuitKeys"></div>
+    </div>
+
+    <div id="boardView">
+      <div class="top" id="topRow">
+        <div class="rotor" id="rotorBox">
+          <div class="window" aria-live="polite">
+            <div id="wPrev">Z</div>
+            <div class="cur" id="wCur">A</div>
+            <div id="wNext">B</div>
+          </div>
+          <div class="thumb">
+            <button class="btn" id="up" aria-label="Rotor position forward">▲</button>
+            <button class="btn" id="down" aria-label="Rotor position back">▼</button>
+          </div>
+          <div class="rotor-label"><b>Rotor I</b>position <span id="posNum">1</span> of 26</div>
+        </div>
+        <div class="switches" id="switches">
+          <label class="sw"><input type="checkbox" id="optPlug"><span></span>Plugboard</label>
+          <label class="sw"><input type="checkbox" id="optRotor"><span></span>Rotor installed</label>
+          <label class="sw"><input type="checkbox" id="optStep"><span></span>Rotor steps</label>
+          <label class="sw"><input type="checkbox" id="optRefl"><span></span>Reflector</label>
+        </div>
+      </div>
+      <div class="board" id="lamps" aria-label="Lampboard"></div>
+      <div class="divider" style="margin-block: 18px"></div>
+      <div class="board" id="keys" aria-label="Keyboard"></div>
+    </div>
+  </section>
+
+  <section id="plugSec">
+    <h2>Plugboard</h2>
+    <div class="plugs" id="plugs"></div>
+    <div class="plug-actions">
+      <button class="btn" id="unplug">Remove all cables</button>
+      <span class="hint" id="plugHint" style="margin:0"></span>
+    </div>
+  </section>
+
+  <section id="tapeSec">
     <h2>Tape</h2>
     <dl class="tape">
       <dt>Input</dt><dd id="tIn"></dd>
@@ -159,30 +231,26 @@ ul.try b { font-family: var(--font-mono); }
     </div>
   </section>
 
-  <section>
+  <section id="traceSec">
     <h2>Signal path, last key</h2>
     <div class="trace" id="trace"></div>
     <p class="hint" id="traceHint"></p>
   </section>
 
-  <section>
-    <h2>Full substitution at position <span id="tblPos">A</span></h2>
+  <section id="tableSec">
+    <h2 id="tblTitle">Full substitution</h2>
     <div class="tablewrap"><table id="tbl"></table></div>
     <p class="hint" id="tblHint"></p>
   </section>
 
-  <section>
+  <section id="expSec">
     <h2>Experiments</h2>
-    <ul class="try">
-      <li>Select <b>Strip to bare wiring</b>. Each key is wired straight to its own lamp, so the output equals the input.</li>
-      <li>Add only the reflector. It swaps 13 fixed letter pairs: a reciprocal substitution that never changes between keypresses.</li>
-      <li>Install the rotor with stepping off. The substitution is still fixed, but it is now a scrambled mapping instead of simple pairs.</li>
-      <li>Turn stepping on and type <b>AAAAAA</b>. The same input letter produces a different output each time because the rotor moves.</li>
-      <li>Reset to A, type a word, then reset again and type the output. The original word comes back. The reflector makes the machine its own inverse.</li>
-      <li>Repeat that with the reflector off. Decryption fails, because the current passes through the rotor only once and that mapping is not symmetric.</li>
-      <li>With the reflector on, check the table: no letter ever maps to itself. Codebreakers at Bletchley Park exploited this flaw.</li>
-      <li>Turn stepping off. The machine becomes a fixed substitution cipher, breakable by letter-frequency analysis.</li>
-      <li>Type 26 letters with stepping on. The cycle repeats after 26 keys. The real machine used three rotors to stretch this to 16,900.</li>
+    <ul class="list">
+      <li>Turn everything off. The keyboard is back to straight wires and the output equals the input.</li>
+      <li>Reset to A, type a word, then reset again and type the output. The original word comes back as long as the reflector is in.</li>
+      <li>Repeat that with the reflector off. Decryption fails, because the current crosses the rotor only once and that mapping is not symmetric.</li>
+      <li>With the reflector on, no letter ever maps to itself. Codebreakers at Bletchley Park exploited this flaw.</li>
+      <li>Type 26 letters with stepping on. The cycle repeats after 26 keys. The service machine used three rotors to stretch the period to 16,900.</li>
     </ul>
   </section>
 </div>
@@ -194,20 +262,58 @@ const W = idx("EKMFLGDQVZNTOWYHXUSPAIBRCJ");   // Rotor I
 const Winv = []; W.forEach((v, i) => (Winv[v] = i));
 const REF = idx("YRUHQSLDPXNGOKMIEBFZCWVJAT"); // UKW-B
 const m = n => ((n % 26) + 26) % 26;
-
 const fwd = (x, p) => m(W[m(x + p)] - p);
 const back = (x, p) => m(Winv[m(x + p)] - p);
 
-function encipher(x, p, refl, rotor = true) {
+// c = components: { plug, rotor, step, refl }
+function encipher(x, p, c, plug) {
   const s = [{ label: "Key", v: x }];
   let v = x;
-  if (rotor) { v = fwd(v, p); s.push({ label: "Rotor in", v }); }
-  if (refl) { v = REF[v]; s.push({ label: "Reflector", v }); }
-  if (rotor && refl) { v = back(v, p); s.push({ label: "Rotor out", v }); }
+  if (c.plug) { v = plug[v]; s.push({ label: "Plugboard", v }); }
+  if (c.rotor) { v = fwd(v, p); s.push({ label: "Rotor in", v }); }
+  if (c.refl) {
+    v = REF[v]; s.push({ label: "Reflector", v });
+    if (c.rotor) { v = back(v, p); s.push({ label: "Rotor out", v }); }
+    if (c.plug) { v = plug[v]; s.push({ label: "Plugboard", v }); }
+  }
   return { out: v, stages: s };
 }
 
-const state = { pos: 0, rotor: true, step: true, refl: true, inp: "", out: "", last: null };
+const STAGES = [
+  { title: "One circuit", circuits: 1,
+    body: "A battery, a key and a lamp in a loop. Pressing the key closes the circuit and the lamp lights. Every Enigma keystroke is this circuit. The rest of the machine only decides which lamp the current reaches.",
+    try: "Press and hold <b>A</b>." },
+  { title: "Two circuits", circuits: 2,
+    body: "Add a second key and lamp on the same battery. Wired straight, each key lights its own letter. Cross the two wires and A lights B. The wiring itself is a substitution cipher.",
+    try: "Turn on <b>Cross the wires</b>, then press A and B." },
+  { title: "Twenty-six circuits", c: {},
+    body: "Extend the idea to the full alphabet, laid out QWERTZ as on the German keyboard. The wires are still straight, so the output equals the input.",
+    try: "Type a word. The output matches it letter for letter." },
+  { title: "Plugboard", c: { plug: true },
+    body: "The plugboard (Steckerbrett) sits between the keyboard and the lamps. Each cable swaps two letters in both directions. Letters without a cable pass straight through. Operators changed the cables every day.",
+    try: "Tap two sockets to connect them. Tap a connected socket to remove its cable." },
+  { title: "Reflector", c: { plug: true, refl: true },
+    body: "Add the reflector (Umkehrwalze B), a fixed set of 13 wires that pairs every letter with another. The current now goes into the machine, turns around and comes back, so it crosses the plugboard twice. The result is reciprocal, and no letter can encipher to itself.",
+    try: "Type a word, then clear the tape and type the output. The word comes back." },
+  { title: "Rotor", c: { plug: true, rotor: true, refl: true },
+    body: "Insert Rotor I between the plugboard and the reflector. Its 26 internal wires scramble the letters, and the current crosses it twice, once in each direction. The rotor position shifts which wire each contact meets. Stepping is still off, so the substitution stays fixed while you type.",
+    try: "Use the arrows to change the rotor position and watch the table change." },
+  { title: "Stepping", c: { plug: true, rotor: true, step: true, refl: true },
+    body: "Add the stepping mechanism. Each keypress turns the rotor one position before the current flows, so consecutive letters use different substitutions. This is what defeats simple frequency analysis. With one rotor, the cycle repeats every 26 keys.",
+    try: "Reset the rotor to A and type <b>AAAAAA</b>." },
+  { title: "Workbench", c: { plug: true, rotor: true, step: true, refl: true }, free: true,
+    body: "Every component is installed. Turn any of them off to see what it contributes.",
+    try: "Try the experiments at the bottom of the page." },
+];
+
+const state = {
+  stage: 0, crossed: false, held: null,
+  c: {}, pos: 0, inp: "", out: "", last: null,
+  plug: A.split("").map((_, i) => i), pending: null,
+};
+// Example cables so the plugboard stage opens configured.
+[["A", "M"], ["F", "T"], ["Q", "Z"]].forEach(([a, b]) => { const i = A.indexOf(a), j = A.indexOf(b); state.plug[i] = j; state.plug[j] = i; });
+
 const $ = id => document.getElementById(id);
 const ROWS = ["QWERTZUIO", "ASDFGHJK", "PYXCVBNML"];
 
@@ -226,20 +332,160 @@ function buildBoard(el, cls, isKey) {
 buildBoard($("lamps"), "lamp", false);
 buildBoard($("keys"), "k", true);
 
+// Plugboard sockets
+A.split("").forEach((ch, i) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "sock"; b.id = "sock-" + ch;
+  b.innerHTML = `<b>${ch}</b><small></small>`;
+  b.addEventListener("click", () => tapSocket(i));
+  $("plugs").appendChild(b);
+});
+const cableCount = () => state.plug.filter((v, i) => v !== i).length / 2;
+function tapSocket(i) {
+  if (state.plug[i] !== i) {
+    const j = state.plug[i]; state.plug[i] = i; state.plug[j] = j; state.pending = null;
+  } else if (state.pending === null) {
+    if (cableCount() >= 10) { state.pending = null; renderPlug("All 10 cables are in use. Remove one first."); return; }
+    state.pending = i;
+  } else if (state.pending === i) {
+    state.pending = null;
+  } else {
+    const j = state.pending; state.plug[i] = j; state.plug[j] = i; state.pending = null;
+  }
+  state.last = null;
+  render();
+}
+function renderPlug(msg) {
+  A.split("").forEach((ch, i) => {
+    const b = $("sock-" + ch), p = state.plug[i];
+    b.classList.toggle("paired", p !== i);
+    b.classList.toggle("pending", state.pending === i);
+    b.querySelector("small").textContent = p !== i ? A[p] : "";
+    b.setAttribute("aria-label", p !== i ? `${ch}, connected to ${A[p]}` : `${ch}, no cable`);
+  });
+  const n = cableCount();
+  $("plugHint").textContent = msg || (state.pending !== null
+    ? `Tap a second socket to connect it to ${A[state.pending]}.`
+    : `${n} of 10 cables in use.`);
+}
+
+// Circuit diagram for stages 1 and 2
+function circuitSvg(n, crossed, held) {
+  const rowY = i => (n === 1 ? 80 : 60 + i * 90);
+  const H = n === 1 ? 160 : 250;
+  const mid = n === 1 ? 80 : (rowY(0) + rowY(1)) / 2;
+  const target = i => (n === 2 && crossed ? 1 - i : i);
+  const live = held !== null;
+  const lit = live ? target(held) : -1;
+  const L = i => " " + (i ? "live" : "");
+  let s = `<svg viewBox="0 0 340 ${H}" role="img" aria-label="Circuit diagram: battery, ${n === 1 ? "one key and one lamp" : "two keys and two lamps"}${n === 2 ? (crossed ? ", wires crossed" : ", wires straight") : ""}">`;
+  // Battery and buses
+  s += `<path class="wire${L(live)}" d="M60 ${mid - 6} V20 H110 V${rowY(n - 1)}"/>`;
+  s += `<path class="wire${L(live)}" d="M60 ${mid + 6} V${H - 20} H320 V${rowY(0)}"/>`;
+  s += `<line class="plate" x1="44" y1="${mid - 6}" x2="76" y2="${mid - 6}" stroke-width="3"/>`;
+  s += `<line class="plate" x1="52" y1="${mid + 6}" x2="68" y2="${mid + 6}" stroke-width="6"/>`;
+  s += `<text class="svgt" x="38" y="${mid + 4}" text-anchor="end">Battery</text>`;
+  s += `<text class="svgt" x="270" y="${rowY(0) - 24}" text-anchor="middle">Lamp${n > 1 ? "s" : ""}</text>`;
+  for (let i = 0; i < n; i++) {
+    const y = rowY(i), ty = rowY(target(i)), on = held === i;
+    s += `<path class="wire${L(on)}" d="M110 ${y} H130"/>`;
+    s += `<path class="wire${L(on)}" d="M174 ${y} C 220 ${y}, 220 ${ty}, 256 ${ty}"/>`;
+    s += on ? `<line class="lever" x1="130" y1="${y}" x2="172" y2="${y}"/>` : `<line class="lever" x1="130" y1="${y}" x2="168" y2="${y - 16}"/>`;
+    s += `<circle class="node" cx="130" cy="${y}" r="3.5"/><circle class="node" cx="174" cy="${y}" r="3.5"/>`;
+    s += `<text class="svgt" x="152" y="${y + 22}" text-anchor="middle">Key ${A[i]}</text>`;
+  }
+  for (let j = 0; j < n; j++) {
+    const y = rowY(j), on = lit === j;
+    s += `<path class="wire${L(on)}" d="M284 ${y} H320"/>`;
+    s += `<circle class="bulb${on ? " on" : ""}" cx="270" cy="${y}" r="14"/>`;
+    s += `<text class="svgl${on ? " on" : ""}" x="270" y="${y + 4.5}" text-anchor="middle">${A[j]}</text>`;
+  }
+  return s + "</svg>";
+}
+function buildCircuitKeys(n) {
+  const row = $("circuitKeys"); row.innerHTML = "";
+  for (let i = 0; i < n; i++) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "k big"; b.textContent = A[i]; b.dataset.i = i;
+    b.setAttribute("aria-label", `Hold key ${A[i]}`);
+    const down = e => { e.preventDefault(); hold(i); };
+    const up = () => release(i);
+    b.addEventListener("pointerdown", down);
+    ["pointerup", "pointerleave", "pointercancel"].forEach(t => b.addEventListener(t, up));
+    b.addEventListener("keydown", e => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); hold(i); } });
+    b.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter") release(i); });
+    row.appendChild(b);
+  }
+}
+function hold(i) { state.held = i; renderCircuit(); }
+function release(i) { if (state.held === i) { state.held = null; renderCircuit(); } }
+function renderCircuit() {
+  const st = STAGES[state.stage];
+  $("circuitSvg").innerHTML = circuitSvg(st.circuits, state.crossed, state.held);
+  document.querySelectorAll("#circuitKeys .k").forEach(b => b.classList.toggle("down", +b.dataset.i === state.held));
+}
+
 function press(ch) {
   const x = A.indexOf(ch); if (x < 0) return;
-  if (state.rotor && state.step) state.pos = m(state.pos + 1);
-  const r = encipher(x, state.pos, state.refl, state.rotor);
+  if (state.c.rotor && state.c.step) state.pos = m(state.pos + 1);
+  const r = encipher(x, state.pos, state.c, state.plug);
   state.last = { x, ...r, pos: state.pos };
   state.inp += ch; state.out += A[r.out];
   render();
-  const k = document.querySelector(`.k[data-ch="${ch}"]`);
+  const k = document.querySelector(`#keys .k[data-ch="${ch}"]`);
   if (k) { k.classList.add("down"); setTimeout(() => k.classList.remove("down"), 120); }
 }
 
 function group(s) { return s.replace(/(.{5})/g, "$1 ").trim(); }
 
+function setStage(n) {
+  state.stage = Math.max(0, Math.min(STAGES.length - 1, n));
+  const st = STAGES[state.stage];
+  state.held = null; state.pending = null; state.last = null; state.inp = ""; state.out = ""; state.pos = 0;
+  if (st.c) { state.c = { plug: false, rotor: false, step: false, refl: false, ...st.c }; }
+  ["plug", "rotor", "step", "refl"].forEach(k => ($("opt" + k[0].toUpperCase() + k.slice(1)).checked = !!state.c[k]));
+  try { if (location.hash !== "#stage-" + (state.stage + 1)) history.replaceState(null, "", "#stage-" + (state.stage + 1)); } catch (e) {}
+  if (st.circuits) buildCircuitKeys(st.circuits);
+  render();
+}
+
 function render() {
+  const st = STAGES[state.stage], c = state.c, isCircuit = !!st.circuits;
+
+  // Stepper
+  const prog = $("progress");
+  if (!prog.children.length) STAGES.forEach((s, i) => {
+    const b = document.createElement("button"); b.type = "button";
+    b.setAttribute("aria-label", `Stage ${i + 1}: ${s.title}`);
+    b.addEventListener("click", () => setStage(i)); prog.appendChild(b);
+  });
+  [...prog.children].forEach((b, i) => { b.className = i === state.stage ? "cur" : i < state.stage ? "done" : ""; b.setAttribute("aria-current", i === state.stage ? "step" : "false"); });
+  $("stageNum").textContent = `Stage ${state.stage + 1} of ${STAGES.length}`;
+  $("stageTitle").textContent = st.title;
+  $("stageBody").textContent = st.body;
+  $("stageTry").innerHTML = st.try;
+  $("prev").disabled = state.stage === 0;
+  $("next").disabled = state.stage === STAGES.length - 1;
+  $("next").textContent = state.stage < STAGES.length - 1 ? `Next: ${STAGES[state.stage + 1].title}` : "Next";
+
+  // Which panels exist at this stage
+  $("circuitView").hidden = !isCircuit;
+  $("boardView").hidden = isCircuit;
+  $("crossRow").hidden = st.circuits !== 2;
+  $("plugSec").hidden = isCircuit || !(c.plug || (st.free));
+  ["tapeSec", "traceSec", "tableSec"].forEach(id => ($(id).hidden = isCircuit));
+  $("expSec").hidden = !st.free;
+  $("switches").hidden = !st.free;
+  $("rotorBox").hidden = isCircuit || (!c.rotor && !st.free);
+  $("topRow").hidden = $("rotorBox").hidden && $("switches").hidden;
+  $("reset").hidden = !c.rotor;
+  $("rotorBox").style.opacity = c.rotor ? "" : "0.35";
+  ["up", "down"].forEach(id => ($(id).disabled = !c.rotor));
+  $("optStep").disabled = !c.rotor;
+
+  if (isCircuit) { renderCircuit(); return; }
+
+  renderPlug();
   const p = state.pos;
   $("wPrev").textContent = A[m(p - 1)];
   $("wCur").textContent = A[p];
@@ -254,58 +500,54 @@ function render() {
   if (!state.last) {
     $("traceHint").textContent = "Press a key to see the current flow through the machine.";
   } else {
-    const st = state.last.stages.concat([{ label: "Lamp", v: state.last.out, end: true }]);
-    st.forEach((s, i) => {
+    const st2 = state.last.stages.concat([{ label: "Lamp", v: state.last.out, end: true }]);
+    st2.forEach((s, i) => {
       if (i) { const a = document.createElement("span"); a.className = "arrow"; a.textContent = "→"; tr.appendChild(a); }
       const d = document.createElement("div"); d.className = "stage" + (s.end ? " end" : "");
       d.innerHTML = `<span class="l">${A[s.v]}</span><small>${s.label}</small>`;
       tr.appendChild(d);
     });
-    $("traceHint").textContent = !state.rotor
-      ? (state.refl ? "No rotor is installed, so the current goes straight to the reflector and back." : "No components are installed, so the key is wired directly to its lamp.")
-      : state.step
-      ? `The rotor stepped to ${A[state.last.pos]} before this letter was enciphered.`
-      : `Stepping is off, so the rotor stayed at ${A[state.last.pos]}.`;
+    $("traceHint").textContent = !c.plug && !c.rotor && !c.refl ? "The key is wired straight to its lamp."
+      : c.rotor && c.step ? `The rotor stepped to ${A[state.last.pos]} before this letter was enciphered.`
+      : c.rotor ? `The rotor stayed at ${A[state.last.pos]} because stepping is off.`
+      : c.refl ? "The current passed through the plugboard, turned at the reflector, and came back."
+      : "The current passed through the plugboard once.";
   }
 
   // Table shows the position the last key used, or the current one before any key.
   const tp = state.last ? state.last.pos : p;
-  $("tblPos").textContent = A[tp];
+  $("tblTitle").textContent = c.rotor ? `Full substitution at position ${A[tp]}` : "Full substitution";
   let top = "<tr><th scope=\"row\">in</th>", bot = "<tr><th scope=\"row\">out</th>", selfCount = 0;
   for (let i = 0; i < 26; i++) {
-    const o = encipher(i, tp, state.refl, state.rotor).out;
+    const o = encipher(i, tp, c, state.plug).out;
     const hl = state.last && state.last.x === i && state.last.pos === tp ? " class=\"hl\"" : "";
     const self = o === i; if (self) selfCount++;
     top += `<th${hl}>${A[i]}</th>`;
     bot += `<td${hl}${self && !hl ? " class=\"self\"" : ""}>${A[o]}</td>`;
   }
   $("tbl").innerHTML = top + "</tr>" + bot + "</tr>";
-  $("rotorBox").classList.toggle("removed", !state.rotor);
-  $("optStep").disabled = !state.rotor;
-  ["up", "down"].forEach(id => ($(id).disabled = !state.rotor));
-  $("tblPos").parentElement.firstChild.textContent = state.rotor ? "Full substitution at position " : "Full substitution, no rotor ";
-  $("tblPos").hidden = !state.rotor;
-  $("tblHint").textContent = !state.rotor && !state.refl
-    ? "Bare wiring: every letter maps to itself (underlined). This is the identity mapping."
-    : !state.rotor
-    ? "The reflector alone swaps 13 fixed pairs. It is reciprocal and never maps a letter to itself, but it is the same for every keypress, so letter frequencies show through."
-    : state.refl
-    ? "With the reflector, every pair swaps both ways (if K gives T, T gives K) and no letter maps to itself."
-    : `Without the reflector, the mapping is one-way. ${selfCount} letter${selfCount === 1 ? "" : "s"} map to ${selfCount === 1 ? "itself" : "themselves"} at this position (underlined).`;
+  const fixed = `${selfCount} letter${selfCount === 1 ? "" : "s"} map to ${selfCount === 1 ? "itself" : "themselves"} (underlined).`;
+  $("tblHint").textContent =
+    !c.plug && !c.rotor && !c.refl ? "Straight wiring: every letter maps to itself (underlined). This is the identity mapping."
+    : !c.rotor && !c.refl ? `Each cable swaps two letters in both directions. ${fixed}`
+    : c.refl ? "Every letter swaps with a partner in both directions (if K gives T, T gives K), and no letter maps to itself. "
+        + (c.rotor && c.step ? "This table applies only at this position. The next keypress uses a different one."
+          : "The table is the same for every keypress, so letter frequencies still show through.")
+    : `Without the reflector, the mapping is one-way. ${fixed}`;
 }
 
+// Controls
+$("prev").onclick = () => setStage(state.stage - 1);
+$("next").onclick = () => setStage(state.stage + 1);
+$("optCross").onchange = e => { state.crossed = e.target.checked; renderCircuit(); };
 $("up").onclick = () => { state.pos = m(state.pos + 1); state.last = null; render(); };
 $("down").onclick = () => { state.pos = m(state.pos - 1); state.last = null; render(); };
 $("reset").onclick = () => { state.pos = 0; state.last = null; render(); };
 $("clear").onclick = () => { state.inp = ""; state.out = ""; state.last = null; render(); };
-$("optStep").onchange = e => { state.step = e.target.checked; render(); };
-$("optRefl").onchange = e => { state.refl = e.target.checked; state.last = null; render(); };
-$("optRotor").onchange = e => { state.rotor = e.target.checked; state.last = null; render(); };
-$("strip").onclick = () => {
-  ["optRotor", "optStep", "optRefl"].forEach(id => ($(id).checked = false));
-  Object.assign(state, { rotor: false, step: false, refl: false, pos: 0, inp: "", out: "", last: null });
-  render();
-};
+$("unplug").onclick = () => { state.plug = A.split("").map((_, i) => i); state.pending = null; state.last = null; render(); };
+["plug", "rotor", "step", "refl"].forEach(k => {
+  $("opt" + k[0].toUpperCase() + k.slice(1)).onchange = e => { state.c[k] = e.target.checked; state.last = null; render(); };
+});
 $("copy").onclick = async e => {
   const btn = e.target;
   try { await navigator.clipboard.writeText(state.out); btn.textContent = "Copied"; }
@@ -313,14 +555,25 @@ $("copy").onclick = async e => {
   setTimeout(() => (btn.textContent = "Copy output"), 1200);
 };
 document.addEventListener("keydown", e => {
-  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+  if (e.target.closest && e.target.closest("button, input")) { if (e.key === " " || e.key === "Enter") return; }
   const ch = e.key.toUpperCase();
-  if (ch.length === 1 && A.includes(ch)) { e.preventDefault(); press(ch); }
+  if (ch.length !== 1 || !A.includes(ch)) return;
+  const st = STAGES[state.stage];
+  if (st.circuits) { const i = A.indexOf(ch); if (i < st.circuits) { e.preventDefault(); hold(i); } }
+  else { e.preventDefault(); press(ch); }
+});
+document.addEventListener("keyup", e => {
+  const i = A.indexOf(e.key.toUpperCase());
+  if (STAGES[state.stage].circuits && i >= 0) release(i);
+});
+window.addEventListener("hashchange", () => {
+  const n = parseInt((location.hash.match(/^#stage-(\d+)$/) || [])[1], 10);
+  if (n && n - 1 !== state.stage) setStage(n - 1);
 });
 
-// Example starting state: "HELLO" typed from position A.
-"HELLO".split("").forEach(press);
-render();
+const start = parseInt((location.hash.match(/^#stage-(\d+)$/) || [])[1], 10);
+setStage(start ? start - 1 : 0);
 </script>
 </body>
 </html>
